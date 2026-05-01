@@ -1,0 +1,2382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PSU Clinic – Digital Queueing & Schedule Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+/* ================================================================
+   ROOT VARIABLES – PSU + Medical Deep Blue/Green Fusion Theme
+================================================================ */
+:root {
+  /* Deep navy-to-green gradient theme */
+  --bg-deep:        #050d1a;
+  --bg-navy:        #0a1628;
+  --bg-panel:       #0d1f3c;
+  --bg-card:        #0f2447;
+  --bg-card-hover:  #132d55;
+  --bg-input:       #0d1f3c;
+
+  /* PSU Green accents */
+  --psu-green:      #00a86b;
+  --psu-green-glow: #00d084;
+  --psu-green-dim:  #006b43;
+
+  /* Medical blues */
+  --med-blue:       #1a56ff;
+  --med-blue-mid:   #2563eb;
+  --med-blue-light: #3b82f6;
+  --med-blue-glow:  rgba(26,86,255,0.4);
+
+  /* Gold */
+  --gold:           #ffd700;
+  --gold-light:     #ffe44d;
+  --gold-dim:       #c9a800;
+
+  /* Teal */
+  --teal:           #06b6d4;
+  --teal-glow:      rgba(6,182,212,0.3);
+
+  /* Text */
+  --text-white:     #ffffff;
+  --text-bright:    #e2eaff;
+  --text-soft:      #8fa4c8;
+  --text-muted:     #4a6080;
+  --border:         rgba(255,255,255,0.08);
+  --border-glow:    rgba(26,86,255,0.4);
+
+  /* Gradients */
+  --grad-hero:  linear-gradient(135deg, #050d1a 0%, #0a1628 40%, #0d2240 70%, #0a1628 100%);
+  --grad-card:  linear-gradient(145deg, rgba(13,31,60,0.95) 0%, rgba(15,36,71,0.9) 100%);
+  --grad-gold:  linear-gradient(135deg, #ffd700, #ff9f00);
+  --grad-green: linear-gradient(135deg, #00a86b, #00d084);
+  --grad-blue:  linear-gradient(135deg, #1a56ff, #06b6d4);
+  --grad-role-student: linear-gradient(135deg, #1a56ff 0%, #0ea5e9 100%);
+  --grad-role-nurse:   linear-gradient(135deg, #00a86b 0%, #06b6d4 100%);
+  --grad-role-admin:   linear-gradient(135deg, #7c3aed 0%, #1a56ff 100%);
+
+  /* Easing */
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out:    cubic-bezier(0, 0, 0.2, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-bright);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ================================================================
+   ANIMATED BACKGROUND CANVAS (shared across all screens)
+================================================================ */
+#bg-canvas {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+  background: var(--grad-hero);
+}
+.bg-orb {
+  position: fixed; border-radius: 50%; filter: blur(80px);
+  pointer-events: none; z-index: 0; will-change: transform;
+}
+.bg-orb-1 { width:500px;height:500px; background:rgba(26,86,255,0.12); top:-100px;left:-100px; animation: orbFloat1 18s ease-in-out infinite; }
+.bg-orb-2 { width:400px;height:400px; background:rgba(0,168,107,0.10); bottom:-80px;right:-80px; animation: orbFloat2 22s ease-in-out infinite; }
+.bg-orb-3 { width:300px;height:300px; background:rgba(255,215,0,0.05); top:40%;left:50%; animation: orbFloat3 15s ease-in-out infinite; }
+.bg-orb-4 { width:250px;height:250px; background:rgba(6,182,212,0.07); top:20%;right:20%; animation: orbFloat1 20s ease-in-out infinite reverse; }
+
+@keyframes orbFloat1 { 0%,100%{transform:translate(0,0) scale(1);} 33%{transform:translate(60px,-40px) scale(1.1);} 66%{transform:translate(-30px,50px) scale(0.95);} }
+@keyframes orbFloat2 { 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(-70px,-60px) scale(1.15);} }
+@keyframes orbFloat3 { 0%,100%{transform:translate(-50%,-50%) scale(1);} 50%{transform:translate(-50%,-50%) scale(1.3);} }
+
+/* Floating particles */
+.particle {
+  position: fixed; pointer-events: none; z-index: 0;
+  border-radius: 50%; opacity: 0;
+  animation: particleFly linear infinite;
+}
+@keyframes particleFly {
+  0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+  10%  { opacity: 0.6; }
+  90%  { opacity: 0.3; }
+  100% { transform: translateY(-20vh) scale(1); opacity: 0; }
+}
+
+/* Grid overlay */
+.grid-overlay {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(26,86,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26,86,255,0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* ================================================================
+   SCREEN SYSTEM
+================================================================ */
+.screen { display: none; position: relative; z-index: 1; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ================================================================
+   SPLASH SCREEN
+================================================================ */
+#screen-splash {
+  align-items: center; justify-content: center;
+  text-align: center;
+}
+.splash-inner { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; }
+
+/* Hexagon grid behind logo */
+.hex-grid {
+  position: absolute; width: 500px; height: 500px;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.hex-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid rgba(26,86,255,0.15);
+  animation: ringPulse 3s ease-in-out infinite;
+}
+.hex-ring:nth-child(2) { inset: 40px; border-color: rgba(0,168,107,0.12); animation-delay: 0.5s; }
+.hex-ring:nth-child(3) { inset: 80px; border-color: rgba(255,215,0,0.08); animation-delay: 1s; }
+.hex-ring:nth-child(4) { inset: 120px; border-color: rgba(6,182,212,0.1); animation-delay: 1.5s; }
+@keyframes ringPulse { 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.05);opacity:0.5;} }
+
+/* Logo container */
+.splash-logo-wrap { position: relative; display: flex; flex-direction: column; align-items: center; }
+.splash-logo-circle {
+  width: 180px; height: 180px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, rgba(26,86,255,0.3), rgba(0,168,107,0.2));
+  border: 2px solid rgba(255,215,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  box-shadow:
+    0 0 60px rgba(26,86,255,0.3),
+    0 0 120px rgba(0,168,107,0.15),
+    inset 0 0 40px rgba(255,215,0,0.05);
+  animation: logoEntrance 1.2s var(--ease-bounce) 0.4s both;
+}
+@keyframes logoEntrance {
+  from { opacity:0; transform:scale(0.3) rotate(-20deg); }
+  to   { opacity:1; transform:scale(1) rotate(0deg); }
+}
+.splash-logo-circle::before {
+  content: '';
+  position: absolute; inset: -2px; border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    var(--gold) 60deg,
+    transparent 120deg,
+    var(--psu-green) 180deg,
+    transparent 240deg,
+    var(--med-blue) 300deg,
+    transparent 360deg
+  );
+  animation: spinBorder 6s linear infinite;
+  mask: radial-gradient(transparent 85px, black 87px);
+  -webkit-mask: radial-gradient(transparent 85px, black 87px);
+}
+@keyframes spinBorder { to { transform: rotate(360deg); } }
+.splash-logo-circle img {
+  width: 130px; height: 130px; object-fit: contain; position: relative; z-index: 1;
+  filter: drop-shadow(0 4px 16px rgba(255,255,255,0.15));
+}
+
+/* Mirror reflection */
+.splash-logo-reflection {
+  width: 180px; height: 70px; overflow: hidden; margin-top: 2px;
+  transform: scaleY(-1);
+  mask-image: linear-gradient(to bottom, rgba(255,255,255,0.35), transparent 90%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(255,255,255,0.35), transparent 90%);
+  opacity: 0.4;
+}
+.splash-logo-reflection img { width: 180px; height: 180px; object-fit: contain; transform: scaleY(-1); }
+
+/* Medical cross orbit */
+.med-cross-orbit {
+  position: absolute; width: 240px; height: 240px;
+  animation: orbitSpin 8s linear infinite;
+}
+@keyframes orbitSpin { to { transform: rotate(360deg); } }
+.med-cross-dot {
+  position: absolute; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--gold); top: 0; left: 50%; transform: translateX(-50%);
+  box-shadow: 0 0 12px var(--gold);
+}
+.med-cross-dot:nth-child(2) { background: var(--psu-green-glow); top: auto; bottom: 0; box-shadow: 0 0 12px var(--psu-green-glow); animation: none; }
+.med-cross-dot:nth-child(3) { background: var(--teal); top: 50%; left: 0; transform: translateY(-50%); box-shadow: 0 0 12px var(--teal); }
+.med-cross-dot:nth-child(4) { background: var(--med-blue-light); top: 50%; left: auto; right: 0; transform: translateY(-50%); box-shadow: 0 0 12px var(--med-blue-light); }
+
+/* Splash text */
+.splash-university-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.4rem; font-weight: 900; color: var(--text-white);
+  letter-spacing: 0.04em; margin-top: 28px; line-height: 1.15;
+  animation: slideUp 0.8s var(--ease-bounce) 1s both;
+  text-shadow: 0 0 40px rgba(255,255,255,0.2);
+}
+.splash-campus {
+  font-size: 0.82rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--gold); margin-top: 6px;
+  animation: slideUp 0.8s var(--ease-bounce) 1.2s both;
+}
+.splash-divider {
+  width: 300px; height: 1px; margin: 22px auto;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: slideUp 0.8s var(--ease-bounce) 1.3s both;
+}
+.splash-desc {
+  max-width: 520px; padding: 0 24px;
+  font-size: 0.95rem; line-height: 1.75; color: var(--text-soft);
+  animation: slideUp 0.8s var(--ease-bounce) 1.4s both;
+}
+.splash-desc strong { color: var(--gold-light); font-weight: 600; }
+.splash-system-badge {
+  margin-top: 18px;
+  display: inline-flex; align-items: center; gap: 10px;
+  background: rgba(26,86,255,0.15); border: 1px solid rgba(26,86,255,0.3);
+  padding: 10px 22px; border-radius: 99px;
+  font-size: 0.82rem; font-weight: 600; letter-spacing: 0.08em;
+  color: var(--med-blue-light);
+  animation: slideUp 0.8s var(--ease-bounce) 1.5s both;
+  box-shadow: 0 0 20px rgba(26,86,255,0.2);
+}
+@keyframes slideUp { from{opacity:0;transform:translateY(24px);} to{opacity:1;transform:translateY(0);} }
+
+/* Loading bar */
+.splash-loader { margin-top: 44px; animation: slideUp 0.8s var(--ease-bounce) 1.6s both; }
+.loader-track {
+  width: 280px; height: 4px; background: rgba(255,255,255,0.08);
+  border-radius: 99px; overflow: hidden; margin: 0 auto;
+}
+.loader-fill {
+  height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--med-blue), var(--psu-green-glow), var(--gold));
+  background-size: 200% 100%;
+  animation: loaderFill 2.8s var(--ease-smooth) 1.8s both, shimmer 1.5s linear 1.8s infinite;
+}
+@keyframes loaderFill { from{width:0%;} to{width:100%;} }
+@keyframes shimmer { 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+.loader-label {
+  margin-top: 12px; font-size: 0.7rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--text-muted);
+  animation: loadBlink 1s ease-in-out 2s infinite;
+}
+@keyframes loadBlink { 0%,100%{opacity:0.4;} 50%{opacity:1;} }
+
+/* ================================================================
+   LION TRANSITION
+================================================================ */
+#lion-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: radial-gradient(circle, #0a1628 0%, #050d1a 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.35s;
+}
+#lion-overlay.active { opacity: 1; pointer-events: all; }
+#lion-overlay.fade-out { opacity: 0; }
+.lion-wrap {
+  animation: lionRoar 0.5s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 40px rgba(255,215,0,0.5));
+}
+@keyframes lionRoar {
+  from { transform: scale(1) rotate(-4deg); }
+  to   { transform: scale(1.12) rotate(4deg); }
+}
+.lion-roar-text {
+  margin-top: 24px;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem; color: var(--gold);
+  letter-spacing: 0.25em; text-transform: uppercase;
+  animation: roarPulse 0.5s ease-in-out infinite alternate;
+}
+@keyframes roarPulse { from{letter-spacing:0.15em;opacity:0.8;} to{letter-spacing:0.3em;opacity:1;} }
+
+/* ================================================================
+   ROLE SELECTION SCREEN
+================================================================ */
+#screen-roles {
+  min-height: 100vh;
+  align-items: center; justify-content: center;
+  padding: 60px 24px;
+}
+.roles-container { position: relative; z-index: 2; width: 100%; max-width: 1100px; }
+.roles-eyebrow {
+  text-align: center; margin-bottom: 8px;
+  font-size: 0.75rem; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--gold); font-weight: 700;
+  animation: slideUp 0.6s var(--ease-bounce) 0.1s both;
+}
+.roles-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 3rem; font-weight: 900; text-align: center;
+  color: var(--text-white); margin-bottom: 14px;
+  animation: slideUp 0.6s var(--ease-bounce) 0.2s both;
+  text-shadow: 0 0 60px rgba(255,255,255,0.15);
+}
+.roles-underline {
+  width: 80px; height: 3px; margin: 0 auto 50px;
+  background: var(--grad-gold); border-radius: 99px;
+  animation: slideUp 0.6s var(--ease-bounce) 0.3s both;
+}
+.roles-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+}
+@media(max-width:800px){ .roles-grid{ grid-template-columns:1fr; } }
+
+/* Role card — matches Image 1 style */
+.role-card {
+  background: var(--grad-card);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px; padding: 36px 32px 32px;
+  display: flex; flex-direction: column; gap: 0;
+  cursor: default;
+  transition: transform 0.4s var(--ease-bounce), box-shadow 0.4s, border-color 0.3s;
+  position: relative; overflow: hidden;
+  animation: cardEntrance 0.7s var(--ease-bounce) both;
+  backdrop-filter: blur(12px);
+}
+.role-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  opacity: 0; transition: opacity 0.3s;
+}
+.role-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(255,255,255,0.15);
+}
+.role-card:hover::before { opacity: 1; }
+.role-card.student::before { background: var(--grad-role-student); }
+.role-card.nurse::before   { background: var(--grad-role-nurse); }
+.role-card.admin::before   { background: var(--grad-role-admin); }
+.role-card.student:hover { box-shadow: 0 24px 60px rgba(26,86,255,0.25), 0 0 0 1px rgba(26,86,255,0.2); }
+.role-card.nurse:hover   { box-shadow: 0 24px 60px rgba(0,168,107,0.2), 0 0 0 1px rgba(0,168,107,0.2); }
+.role-card.admin:hover   { box-shadow: 0 24px 60px rgba(124,58,237,0.2), 0 0 0 1px rgba(124,58,237,0.2); }
+.role-card:nth-child(1){ animation-delay:0.4s; }
+.role-card:nth-child(2){ animation-delay:0.55s; }
+.role-card:nth-child(3){ animation-delay:0.7s; }
+@keyframes cardEntrance {
+  from { opacity:0; transform:translateY(50px) scale(0.92); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+
+.role-icon-wrap {
+  width: 68px; height: 68px; border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; color: #fff; margin-bottom: 28px;
+  position: relative;
+}
+.role-icon-wrap::after {
+  content: ''; position: absolute; inset: -4px; border-radius: 22px;
+  opacity: 0; transition: opacity 0.3s;
+}
+.role-card:hover .role-icon-wrap::after { opacity: 1; }
+.student .role-icon-wrap { background: var(--grad-role-student); box-shadow: 0 8px 24px rgba(26,86,255,0.4); }
+.nurse   .role-icon-wrap { background: var(--grad-role-nurse);   box-shadow: 0 8px 24px rgba(0,168,107,0.4); }
+.admin   .role-icon-wrap { background: var(--grad-role-admin);   box-shadow: 0 8px 24px rgba(124,58,237,0.4); }
+.student .role-icon-wrap::after { background: rgba(26,86,255,0.15); }
+.nurse   .role-icon-wrap::after { background: rgba(0,168,107,0.15); }
+.admin   .role-icon-wrap::after { background: rgba(124,58,237,0.15); }
+
+.role-card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.35rem; font-weight: 700; color: var(--text-white);
+  margin-bottom: 12px; letter-spacing: 0.02em;
+}
+.role-card-desc {
+  font-size: 0.88rem; line-height: 1.65; color: var(--text-soft);
+  margin-bottom: 22px;
+}
+.role-features { list-style: none; margin-bottom: 32px; display: flex; flex-direction: column; gap: 8px; }
+.role-features li {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 0.83rem; color: var(--text-soft);
+  transition: color 0.2s;
+}
+.role-card:hover .role-features li { color: var(--text-bright); }
+.feat-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.student .feat-dot { background: var(--med-blue-light); box-shadow: 0 0 6px var(--med-blue-light); }
+.nurse   .feat-dot { background: var(--psu-green-glow); box-shadow: 0 0 6px var(--psu-green-glow); }
+.admin   .feat-dot { background: #a78bfa; box-shadow: 0 0 6px #a78bfa; }
+
+.role-enter-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 16px; border-radius: 12px; border: none;
+  font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+  font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: transform 0.3s var(--ease-bounce), box-shadow 0.3s;
+}
+.role-enter-btn::before {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(255,255,255,0); transition: background 0.3s;
+}
+.role-enter-btn:hover::before { background: rgba(255,255,255,0.08); }
+.role-enter-btn:hover { transform: translateY(-2px); }
+.student .role-enter-btn { background: var(--grad-role-student); color: #fff; box-shadow: 0 6px 24px rgba(26,86,255,0.4); }
+.nurse   .role-enter-btn { background: var(--grad-role-nurse);   color: #fff; box-shadow: 0 6px 24px rgba(0,168,107,0.3); }
+.admin   .role-enter-btn { background: var(--grad-role-admin);   color: #fff; box-shadow: 0 6px 24px rgba(124,58,237,0.3); }
+.role-enter-btn .btn-arrow {
+  transition: transform 0.3s var(--ease-bounce);
+}
+.role-enter-btn:hover .btn-arrow { transform: translateX(4px); }
+
+/* Bottom nav on role screen */
+.roles-bottom {
+  text-align: center; margin-top: 40px;
+  font-size: 0.8rem; color: var(--text-muted);
+  animation: slideUp 0.6s var(--ease-bounce) 1s both;
+}
+.roles-bottom strong { color: var(--gold); }
+
+/* ================================================================
+   LOGIN MODAL (popup over role screen or any screen)
+================================================================ */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(5,13,26,0.85);
+  backdrop-filter: blur(14px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.35s;
+}
+.modal-backdrop.open { opacity: 1; pointer-events: all; }
+
+.login-modal {
+  background: linear-gradient(145deg, #0d1f3c 0%, #0f2447 100%);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 24px; width: 100%; max-width: 460px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+  transform: scale(0.88) translateY(30px);
+  transition: transform 0.45s var(--ease-bounce), opacity 0.35s;
+  opacity: 0; overflow: hidden;
+}
+.modal-backdrop.open .login-modal { transform: scale(1) translateY(0); opacity: 1; }
+
+/* Modal glowing top bar */
+.modal-glow-bar { height: 3px; }
+.student-bar { background: var(--grad-role-student); }
+.nurse-bar   { background: var(--grad-role-nurse); }
+.admin-bar   { background: var(--grad-role-admin); }
+
+.modal-header-area {
+  padding: 30px 32px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: flex-start; justify-content: space-between;
+}
+.modal-role-icon {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; color: #fff; flex-shrink: 0;
+}
+.student-icon { background: var(--grad-role-student); box-shadow: 0 6px 20px rgba(26,86,255,0.4); }
+.nurse-icon   { background: var(--grad-role-nurse);   box-shadow: 0 6px 20px rgba(0,168,107,0.35); }
+.admin-icon   { background: var(--grad-role-admin);   box-shadow: 0 6px 20px rgba(124,58,237,0.35); }
+
+.modal-header-text { margin-left: 16px; flex: 1; }
+.modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem; font-weight: 700; color: var(--text-white);
+  font-style: italic;
+}
+.modal-subtitle { font-size: 0.82rem; color: var(--text-soft); margin-top: 3px; }
+.modal-close-btn {
+  width: 36px; height: 36px; border-radius: 10px; border: none;
+  background: rgba(255,255,255,0.06); color: var(--text-soft);
+  cursor: pointer; font-size: 1rem;
+  transition: background 0.2s, transform 0.3s, color 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-close-btn:hover { background: rgba(255,255,255,0.12); color: var(--text-white); transform: rotate(90deg); }
+
+.modal-body { padding: 28px 32px 32px; }
+
+/* Form fields — styled like Image 2 */
+.field-label {
+  display: block; font-size: 0.68rem; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 9px;
+}
+.field-input, .field-select, .field-textarea {
+  width: 100%; padding: 14px 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  font-family: 'DM Sans', sans-serif; font-size: 0.92rem;
+  color: var(--text-bright); outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+  appearance: none; -webkit-appearance: none;
+}
+.field-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238fa4c8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 16px center;
+  padding-right: 44px; cursor: pointer;
+}
+.field-input::placeholder, .field-textarea::placeholder { color: var(--text-muted); }
+.field-input:focus, .field-select:focus, .field-textarea:focus {
+  border-color: rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.07);
+  box-shadow: 0 0 0 3px rgba(26,86,255,0.15);
+}
+.field-input.student-focus:focus { box-shadow: 0 0 0 3px rgba(26,86,255,0.2); border-color: rgba(26,86,255,0.4); }
+.field-input.nurse-focus:focus   { box-shadow: 0 0 0 3px rgba(0,168,107,0.2); border-color: rgba(0,168,107,0.4); }
+.field-input.admin-focus:focus   { box-shadow: 0 0 0 3px rgba(124,58,237,0.2); border-color: rgba(124,58,237,0.4); }
+.field-select option { background: #0d1f3c; color: var(--text-bright); }
+.field-textarea { resize: vertical; min-height: 100px; }
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.field-group { margin-bottom: 18px; }
+
+/* Password toggle wrapper */
+.pass-wrap { position: relative; }
+.pass-wrap .field-input { padding-right: 48px; }
+.pass-toggle {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  border: none; background: none; color: var(--text-muted); cursor: pointer;
+  font-size: 0.9rem; transition: color 0.2s; padding: 4px;
+}
+.pass-toggle:hover { color: var(--text-bright); }
+
+.modal-submit-btn {
+  width: 100%; padding: 16px; border-radius: 12px; border: none;
+  font-family: 'DM Sans', sans-serif; font-size: 0.92rem;
+  font-weight: 700; cursor: pointer; letter-spacing: 0.04em;
+  color: #fff; position: relative; overflow: hidden;
+  transition: transform 0.3s var(--ease-bounce), box-shadow 0.3s;
+  margin-top: 6px;
+}
+.modal-submit-btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(255,255,255,0); transition: background 0.2s;
+}
+.modal-submit-btn:hover::after { background: rgba(255,255,255,0.1); }
+.modal-submit-btn:hover { transform: translateY(-2px); }
+.student-btn { background: var(--grad-role-student); box-shadow: 0 8px 28px rgba(26,86,255,0.4); }
+.nurse-btn   { background: var(--grad-role-nurse);   box-shadow: 0 8px 28px rgba(0,168,107,0.35); }
+.admin-btn   { background: var(--grad-role-admin);   box-shadow: 0 8px 28px rgba(124,58,237,0.35); }
+
+.login-hint {
+  margin-top: 16px; text-align: center;
+  font-size: 0.78rem; color: var(--text-muted);
+}
+.login-hint strong { color: var(--gold-light); font-weight: 600; }
+
+.error-msg {
+  background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 10px; padding: 10px 14px;
+  font-size: 0.82rem; color: #fca5a5;
+  margin-bottom: 16px; display: none;
+  animation: shakeError 0.4s ease;
+}
+.error-msg.show { display: block; }
+@keyframes shakeError {
+  0%,100%{transform:translateX(0);} 20%,60%{transform:translateX(-6px);} 40%,80%{transform:translateX(6px);}
+}
+
+/* ================================================================
+   DASHBOARD SHELL (shared by all three roles)
+================================================================ */
+#screen-dashboard {
+  flex-direction: column; min-height: 100vh;
+}
+
+/* Top Nav */
+.dash-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,22,40,0.92); backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+.dash-nav-inner {
+  max-width: 1400px; margin: 0 auto; padding: 0 28px;
+  height: 64px; display: flex; align-items: center; justify-content: space-between;
+}
+.nav-brand {
+  display: flex; align-items: center; gap: 14px;
+  text-decoration: none; cursor: pointer;
+}
+.nav-brand-logo {
+  width: 42px; height: 42px; border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.nav-brand-logo img { width: 36px; height: 36px; object-fit: contain; }
+.nav-brand-text .title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem; font-weight: 700; color: var(--text-white);
+}
+.nav-brand-text .sub {
+  font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);
+}
+
+/* Horizontal nav tabs */
+.nav-module-tabs {
+  display: flex; gap: 2px;
+  background: rgba(255,255,255,0.04); border-radius: 10px; padding: 4px;
+}
+.nav-module-tab {
+  padding: 8px 18px; border-radius: 8px; border: none; background: none;
+  font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 600;
+  color: var(--text-muted); cursor: pointer;
+  transition: all 0.3s var(--ease-smooth);
+  display: flex; align-items: center; gap: 7px;
+}
+.nav-module-tab:hover { color: var(--text-bright); }
+.nav-module-tab.active { background: rgba(255,255,255,0.08); color: var(--text-white); }
+.student-theme .nav-module-tab.active { background: rgba(26,86,255,0.2); color: var(--med-blue-light); box-shadow: 0 0 0 1px rgba(26,86,255,0.2); }
+.nurse-theme   .nav-module-tab.active { background: rgba(0,168,107,0.15); color: var(--psu-green-glow); box-shadow: 0 0 0 1px rgba(0,168,107,0.2); }
+.admin-theme   .nav-module-tab.active { background: rgba(124,58,237,0.15); color: #a78bfa; box-shadow: 0 0 0 1px rgba(124,58,237,0.2); }
+
+.nav-right { display: flex; align-items: center; gap: 14px; }
+.nav-clock {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem; color: var(--gold);
+  background: rgba(255,215,0,0.06); border: 1px solid rgba(255,215,0,0.12);
+  padding: 6px 14px; border-radius: 8px;
+}
+.nav-notif-btn {
+  position: relative; width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-soft); cursor: pointer; font-size: 0.95rem;
+  transition: all 0.2s;
+}
+.nav-notif-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-white); }
+.notif-dot {
+  position: absolute; top: 6px; right: 6px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--gold); border: 1.5px solid var(--bg-navy);
+  animation: notifPing 2s ease-in-out infinite;
+}
+@keyframes notifPing { 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.5);opacity:0.5;} }
+
+.nav-user-btn {
+  display: flex; align-items: center; gap: 10px; padding: 5px 5px 5px 14px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.nav-user-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.14); }
+.nav-user-info { text-align: right; }
+.nav-user-name { font-size: 0.82rem; font-weight: 600; color: var(--text-white); line-height: 1.2; }
+.nav-user-role { font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.06em; }
+.nav-avatar {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; color: #fff; font-weight: 700; flex-shrink: 0;
+}
+.logout-btn {
+  padding: 8px 16px; border-radius: 9px; border: 1px solid rgba(239,68,68,0.25);
+  background: rgba(239,68,68,0.08); color: #fca5a5;
+  font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+}
+.logout-btn:hover { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.4); color: #fff; }
+
+/* ================================================================
+   DASHBOARD BODY
+================================================================ */
+.dash-body { flex: 1; padding: 36px 28px 60px; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+/* Sub-page tab system */
+.sub-tabs {
+  display: flex; gap: 2px; background: rgba(255,255,255,0.04);
+  border-radius: 12px; padding: 5px; margin-bottom: 30px;
+  width: fit-content; border: 1px solid rgba(255,255,255,0.06);
+}
+.sub-tab {
+  padding: 9px 22px; border-radius: 9px; border: none; background: none;
+  font-family: 'DM Sans', sans-serif; font-size: 0.83rem; font-weight: 600;
+  color: var(--text-muted); cursor: pointer;
+  transition: all 0.3s var(--ease-smooth);
+  display: flex; align-items: center; gap: 7px;
+}
+.sub-tab:hover { color: var(--text-bright); }
+.sub-tab.active { background: rgba(255,255,255,0.08); color: var(--text-white); }
+
+.sub-panel { display: none; animation: panelIn 0.45s var(--ease-bounce); }
+.sub-panel.active { display: block; }
+@keyframes panelIn {
+  from { opacity:0; transform:translateY(18px) scale(0.99); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+
+/* Page header */
+.page-head { margin-bottom: 28px; }
+.page-eyebrow {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 6px;
+  display: flex; align-items: center; gap: 10px;
+}
+.page-eyebrow::before { content:''; width:24px; height:1.5px; }
+.student-theme .page-eyebrow::before { background: var(--med-blue-light); }
+.nurse-theme   .page-eyebrow::before { background: var(--psu-green-glow); }
+.admin-theme   .page-eyebrow::before { background: #a78bfa; }
+.page-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem; font-weight: 700; color: var(--text-white); line-height: 1.2;
+}
+.page-sub { font-size: 0.88rem; color: var(--text-soft); margin-top: 5px; }
+
+/* ================================================================
+   CARDS
+================================================================ */
+.glass-card {
+  background: rgba(13,31,60,0.8);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 18px; overflow: hidden;
+  backdrop-filter: blur(8px);
+  transition: transform 0.35s var(--ease-bounce), box-shadow 0.35s, border-color 0.3s;
+}
+.glass-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.12); }
+.student-theme .glass-card:hover { box-shadow: 0 16px 48px rgba(26,86,255,0.15); }
+.nurse-theme   .glass-card:hover { box-shadow: 0 16px 48px rgba(0,168,107,0.12); }
+.admin-theme   .glass-card:hover { box-shadow: 0 16px 48px rgba(124,58,237,0.12); }
+
+.card-head {
+  padding: 20px 24px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem; font-weight: 700; color: var(--text-white);
+  display: flex; align-items: center; gap: 12px;
+}
+.card-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; color: #fff; flex-shrink: 0;
+}
+.student-theme .card-icon { background: var(--grad-role-student); }
+.nurse-theme   .card-icon { background: var(--grad-role-nurse); }
+.admin-theme   .card-icon { background: var(--grad-role-admin); }
+.card-body { padding: 24px; }
+
+/* Stat cards */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 28px; }
+.stat-card {
+  background: rgba(13,31,60,0.8); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px; padding: 24px;
+  display: flex; flex-direction: column; gap: 14px;
+  position: relative; overflow: hidden;
+  transition: transform 0.35s var(--ease-bounce), box-shadow 0.35s;
+  cursor: default;
+  animation: statIn 0.6s var(--ease-bounce) both;
+}
+.stat-card::after {
+  content: ''; position: absolute; top: -40%; right: -20%;
+  width: 150px; height: 150px; border-radius: 50%;
+  background: var(--stat-glow, rgba(26,86,255,0.08));
+  filter: blur(30px); pointer-events: none;
+}
+.stat-card:hover { transform: translateY(-5px); }
+@keyframes statIn {
+  from{opacity:0;transform:translateY(30px) scale(0.95);}
+  to{opacity:1;transform:translateY(0) scale(1);}
+}
+.stat-icon {
+  width: 50px; height: 50px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; color: #fff;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+.stat-value {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem; font-weight: 900; color: var(--text-white); line-height: 1;
+}
+.stat-label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.stat-trend { font-size: 0.78rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+.trend-up   { color: var(--psu-green-glow); }
+.trend-down { color: #f87171; }
+.trend-flat { color: var(--gold); }
+
+/* Grid helpers */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 22px; }
+@media(max-width:900px){ .grid-2,.grid-3 { grid-template-columns: 1fr; } }
+
+/* ================================================================
+   BUTTONS
+================================================================ */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 22px; border-radius: 10px; border: none; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
+  letter-spacing: 0.02em; transition: all 0.3s var(--ease-bounce);
+  position: relative; overflow: hidden; text-decoration: none;
+}
+.btn::after { content:''; position:absolute;inset:0;background:rgba(255,255,255,0);transition:background 0.2s; }
+.btn:hover::after { background: rgba(255,255,255,0.1); }
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(0); }
+.btn-primary-s { background: var(--grad-role-student); color: #fff; box-shadow: 0 4px 16px rgba(26,86,255,0.35); }
+.btn-primary-n { background: var(--grad-role-nurse);   color: #fff; box-shadow: 0 4px 16px rgba(0,168,107,0.3); }
+.btn-primary-a { background: var(--grad-role-admin);   color: #fff; box-shadow: 0 4px 16px rgba(124,58,237,0.3); }
+.btn-ghost { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-soft); }
+.btn-ghost:hover { color: var(--text-white); border-color: rgba(255,255,255,0.2); }
+.btn-danger { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+.btn-danger:hover { background: rgba(239,68,68,0.25); }
+.btn-gold { background: var(--grad-gold); color: var(--bg-deep); font-weight: 700; box-shadow: 0 4px 16px rgba(255,215,0,0.3); }
+.btn-sm { padding: 7px 14px; font-size: 0.78rem; border-radius: 8px; }
+.btn-lg { padding: 14px 32px; font-size: 0.95rem; border-radius: 13px; }
+
+/* Badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 12px; border-radius: 99px;
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.badge-green  { background: rgba(0,168,107,0.15); color: var(--psu-green-glow); border: 1px solid rgba(0,168,107,0.2); }
+.badge-blue   { background: rgba(26,86,255,0.15);  color: var(--med-blue-light); border: 1px solid rgba(26,86,255,0.2); }
+.badge-gold   { background: rgba(255,215,0,0.12);  color: var(--gold);           border: 1px solid rgba(255,215,0,0.2); }
+.badge-red    { background: rgba(239,68,68,0.12);  color: #f87171;               border: 1px solid rgba(239,68,68,0.2); }
+.badge-purple { background: rgba(124,58,237,0.15); color: #a78bfa;               border: 1px solid rgba(124,58,237,0.2); }
+.badge-teal   { background: rgba(6,182,212,0.12);  color: var(--teal);           border: 1px solid rgba(6,182,212,0.2); }
+.pulse-dot { width:6px;height:6px;border-radius:50%;background:currentColor;animation:notifPing 1.5s infinite; }
+
+/* Table */
+.table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.07); }
+table { width: 100%; border-collapse: collapse; }
+thead { background: rgba(255,255,255,0.04); }
+thead th {
+  padding: 13px 18px; text-align: left;
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.2s; }
+tbody tr:hover { background: rgba(255,255,255,0.03); }
+tbody tr:last-child { border-bottom: none; }
+tbody td { padding: 13px 18px; font-size: 0.87rem; color: var(--text-bright); }
+
+/* Form fields in dashboards */
+.form-group { margin-bottom: 18px; }
+
+/* Queue items */
+.queue-item {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 18px; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+  transition: all 0.3s var(--ease-bounce); cursor: default;
+}
+.queue-item:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.12); transform: translateX(4px); }
+.q-num { font-family:'JetBrains Mono',monospace; font-size:1.4rem; font-weight:700; min-width:64px; text-align:center; }
+.q-info { flex: 1; }
+.q-name { font-weight: 700; font-size: 0.9rem; color: var(--text-white); }
+.q-sub  { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+.queue-list { display: flex; flex-direction: column; gap: 8px; }
+
+/* Timeline */
+.timeline { display: flex; flex-direction: column; gap: 0; padding-left: 28px; position: relative; }
+.timeline::before { content:''; position:absolute;left:8px;top:12px;bottom:12px;width:1.5px;background:linear-gradient(to bottom, var(--med-blue-light), var(--psu-green-glow)); opacity:0.3; }
+.tl-item { position: relative; padding-bottom: 22px; }
+.tl-dot { position:absolute;left:-24px;top:4px;width:14px;height:14px;border-radius:50%;border:2px solid var(--bg-panel); }
+.tl-done    .tl-dot { background:var(--psu-green-glow); box-shadow:0 0 10px rgba(0,208,132,0.5); }
+.tl-pending .tl-dot { background:var(--gold); box-shadow:0 0 10px rgba(255,215,0,0.4); animation:notifPing 2s infinite; }
+.tl-content { background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px 18px; transition: all 0.2s; }
+.tl-content:hover { background: rgba(255,255,255,0.07); }
+.tl-title { font-weight:700;font-size:0.9rem;color:var(--text-white);margin-bottom:3px; }
+.tl-meta { font-size:0.75rem;color:var(--text-muted);display:flex;gap:14px; }
+
+/* Now serving ticker */
+.now-serving-board {
+  background: linear-gradient(145deg, #0f2447, #132d55);
+  border: 1px solid rgba(26,86,255,0.2); border-radius: 18px;
+  padding: 32px; text-align: center; position: relative; overflow: hidden;
+  box-shadow: 0 12px 48px rgba(26,86,255,0.15);
+}
+.now-serving-board::before {
+  content:''; position:absolute;top:0;left:0;right:0;height:2px;
+  background: var(--grad-blue);
+}
+.ns-label { font-size:0.65rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px; }
+.ns-number {
+  font-family:'JetBrains Mono',monospace;font-size:7rem;font-weight:700;line-height:1;
+  color: var(--gold); text-shadow: 0 0 60px rgba(255,215,0,0.4);
+  animation: numPulse 2.5s ease-in-out infinite;
+}
+@keyframes numPulse { 0%,100%{transform:scale(1);}50%{transform:scale(1.03);} }
+.ns-name { font-size:1rem;color:var(--text-soft);margin-top:10px; }
+
+/* Queue ticket */
+.queue-ticket {
+  border: 2px dashed rgba(255,255,255,0.1); border-radius: 16px;
+  padding: 30px; text-align: center; position: relative;
+  background: repeating-linear-gradient(
+    -45deg, rgba(255,255,255,0.01) 0, rgba(255,255,255,0.01) 3px, transparent 3px, transparent 12px
+  );
+}
+.qt-num { font-family:'JetBrains Mono',monospace;font-size:5rem;font-weight:700;color:var(--gold);line-height:1; }
+.qt-label { font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-top:8px; }
+.qt-eta { font-size:1.6rem;font-weight:700;color:var(--teal);margin-top:5px; }
+
+/* Bar chart */
+.bar-chart { display:flex;align-items:flex-end;gap:10px;height:180px;padding:0 8px; }
+.bar-wrap { display:flex;flex-direction:column;align-items:center;gap:6px;flex:1; }
+.bar-col {
+  width:100%; border-radius: 6px 6px 0 0; position: relative; cursor: pointer;
+  transition: opacity 0.2s; background: var(--grad-blue);
+}
+.bar-col:hover { opacity: 0.85; }
+.bar-tip {
+  position:absolute;top:-28px;left:50%;transform:translateX(-50%);
+  background:var(--bg-panel);border:1px solid rgba(255,255,255,0.1);
+  color:var(--text-bright);font-size:0.68rem;font-weight:700;
+  padding:3px 8px;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity 0.2s;pointer-events:none;
+}
+.bar-col:hover .bar-tip { opacity:1; }
+.bar-lbl { font-size:0.65rem;color:var(--text-muted); }
+
+/* Donut */
+.donut-wrap { position:relative;width:160px;height:160px;border-radius:50%; margin:0 auto; }
+.donut-hole { position:absolute;inset:22px;border-radius:50%;background:var(--bg-card);display:flex;flex-direction:column;align-items:center;justify-content:center; }
+.donut-val { font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;color:var(--text-white); }
+.donut-lbl { font-size:0.6rem;color:var(--text-muted);text-align:center; }
+.legend { display:flex;flex-direction:column;gap:8px; }
+.leg-item { display:flex;align-items:center;gap:10px;font-size:0.82rem;color:var(--text-soft); }
+.leg-dot { width:10px;height:10px;border-radius:3px;flex-shrink:0; }
+
+/* Welcome banner */
+.welcome-banner {
+  background: linear-gradient(135deg, rgba(26,86,255,0.15) 0%, rgba(0,168,107,0.1) 100%);
+  border: 1px solid rgba(26,86,255,0.2); border-radius: 20px;
+  padding: 30px 36px; margin-bottom: 28px; position: relative; overflow: hidden;
+}
+.welcome-banner::after {
+  content:'\f0fa'; font-family:'Font Awesome 6 Free'; font-weight:900;
+  position:absolute;right:30px;top:50%;transform:translateY(-50%);
+  font-size:7rem;opacity:0.05;color:#fff;
+}
+.wb-greeting { font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:700;color:var(--text-white);margin-bottom:6px; }
+.wb-sub { font-size:0.88rem;color:var(--text-soft);max-width:520px; }
+.wb-actions { display:flex;gap:12px;margin-top:18px;flex-wrap:wrap; }
+
+/* User management cards */
+.user-row {
+  display:flex;align-items:center;gap:16px;padding:14px 18px;
+  border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);
+  transition:all 0.3s var(--ease-bounce);
+}
+.user-row:hover { background:rgba(255,255,255,0.05);transform:translateX(4px); }
+.user-avatar { width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#fff;font-weight:700;flex-shrink:0; }
+.user-info { flex:1; }
+.user-name { font-weight:700;font-size:0.9rem;color:var(--text-white); }
+.user-sub { font-size:0.75rem;color:var(--text-muted);margin-top:2px; }
+.user-actions { display:flex;gap:8px; }
+
+/* Progress bar */
+.prog-track { height:6px;background:rgba(255,255,255,0.08);border-radius:99px;overflow:hidden; }
+.prog-fill { height:100%;border-radius:99px;transition:width 1s var(--ease-smooth); }
+
+/* ================================================================
+   TOAST NOTIFICATIONS
+================================================================ */
+.toast-zone { position:fixed;top:76px;right:20px;z-index:1000;display:flex;flex-direction:column;gap:10px; }
+.toast-item {
+  background:var(--bg-panel);border:1px solid rgba(255,255,255,0.1);
+  border-radius:12px;padding:14px 18px;
+  display:flex;align-items:center;gap:12px;min-width:280px;max-width:360px;
+  box-shadow:0 8px 30px rgba(0,0,0,0.4);cursor:pointer;
+  animation:toastIn 0.5s var(--ease-bounce);
+  font-size:0.87rem; font-weight:500; color:var(--text-bright);
+}
+.toast-item:hover { transform:translateX(-3px); }
+.toast-item.out { animation:toastOut 0.3s ease forwards; }
+@keyframes toastIn  { from{opacity:0;transform:translateX(60px);} to{opacity:1;transform:translateX(0);} }
+@keyframes toastOut { from{opacity:1;transform:translateX(0);} to{opacity:0;transform:translateX(60px); height:0; margin:0; padding:0;} }
+.toast-left-bar { width:3px;height:100%;border-radius:99px;align-self:stretch;flex-shrink:0; }
+.toast-icon { font-size:1.1rem; flex-shrink:0; }
+
+/* Schedule weekly grid */
+.week-row {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05);
+}
+.week-day { font-size:0.85rem;font-weight:600;color:var(--text-soft);min-width:80px; }
+
+/* Scroll to top */
+.scroll-top-btn {
+  position:fixed;bottom:28px;right:28px;z-index:300;
+  width:44px;height:44px;border-radius:12px;border:none;
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);
+  color:var(--text-soft);font-size:0.9rem;cursor:pointer;
+  opacity:0;transform:translateY(20px);transition:all 0.3s var(--ease-bounce);
+  display:flex;align-items:center;justify-content:center;
+}
+.scroll-top-btn.show { opacity:1;transform:translateY(0); }
+.scroll-top-btn:hover { background:rgba(255,255,255,0.14);color:var(--text-white); transform: translateY(-2px); }
+
+/* Reveal animation */
+.reveal { opacity:0;transform:translateY(28px);transition:opacity 0.55s,transform 0.55s var(--ease-bounce); }
+.reveal.in { opacity:1;transform:translateY(0); }
+
+/* ================================================================
+   POPUP/MODAL for booking, log, etc. (styled like Image 2)
+================================================================ */
+.app-modal {
+  background: linear-gradient(145deg, #0d1f3c 0%, #0f2447 100%);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 24px; width: 100%; max-width: 560px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+  transform: scale(0.88) translateY(30px);
+  transition: transform 0.45s var(--ease-bounce), opacity 0.35s;
+  opacity: 0; overflow: hidden;
+}
+.modal-backdrop.open .app-modal { transform: scale(1) translateY(0); opacity: 1; }
+
+.app-modal-head {
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: flex-start; justify-content: space-between;
+}
+.app-modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem; font-weight: 700; color: var(--text-white); font-style: italic;
+}
+.app-modal-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 3px; }
+.app-modal-body { padding: 28px 32px; }
+.app-modal-foot { padding: 16px 32px 28px; display: flex; gap: 12px; justify-content: flex-end; }
+
+/* ================================================================
+   FOOTER
+================================================================ */
+.dash-footer {
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding: 20px 28px; text-align: center;
+  font-size: 0.75rem; color: var(--text-muted);
+  background: rgba(5,13,26,0.5);
+}
+.dash-footer strong { color: var(--gold-light); }
+
+/* ================================================================
+   ANIMATIONS — extra flair
+================================================================ */
+.glow-student { box-shadow: 0 0 30px rgba(26,86,255,0.25); }
+.glow-nurse   { box-shadow: 0 0 30px rgba(0,168,107,0.2); }
+.glow-admin   { box-shadow: 0 0 30px rgba(124,58,237,0.2); }
+
+/* Medical cross floating icons */
+.float-med {
+  position: absolute; opacity: 0.04; pointer-events: none;
+  animation: floatMed 8s ease-in-out infinite;
+  color: var(--text-white); font-size: 2rem;
+}
+@keyframes floatMed { 0%,100%{transform:translateY(0) rotate(0deg);} 50%{transform:translateY(-20px) rotate(10deg);} }
+
+/* Spin loader inside buttons */
+@keyframes spin { to{transform:rotate(360deg);} }
+.spin { animation: spin 0.8s linear infinite; }
+
+/* Ripple */
+@keyframes ripple { to{transform:scale(5);opacity:0;} }
+.ripple-fx { position:absolute;border-radius:50%;background:rgba(255,255,255,0.25);transform:scale(0);animation:ripple 0.6s linear;pointer-events:none; }
+</style>
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+<div class="bg-orb bg-orb-3"></div>
+<div class="bg-orb bg-orb-4"></div>
+<div class="grid-overlay"></div>
+
+<!-- Toast zone -->
+<div class="toast-zone" id="toastZone"></div>
+
+<!-- Scroll to top -->
+<button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <i class="fas fa-chevron-up"></i>
+</button>
+
+<!-- Lion overlay -->
+<div id="lion-overlay">
+  <div class="lion-wrap">
+    <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="92" fill="rgba(255,215,0,0.06)" stroke="rgba(255,215,0,0.2)" stroke-width="1.5"/>
+      <ellipse cx="100" cy="110" rx="58" ry="56" fill="#FFD700" opacity="0.92"/>
+      <ellipse cx="100" cy="110" rx="46" ry="44" fill="#E6A800"/>
+      <ellipse cx="100" cy="96" rx="35" ry="33" fill="#F4A820"/>
+      <ellipse cx="70" cy="68" rx="11" ry="13" fill="#F4A820"/>
+      <ellipse cx="130" cy="68" rx="11" ry="13" fill="#F4A820"/>
+      <ellipse cx="70" cy="68" rx="6" ry="8" fill="#E07A20"/>
+      <ellipse cx="130" cy="68" rx="6" ry="8" fill="#E07A20"/>
+      <ellipse cx="88" cy="91" rx="7" ry="8" fill="#1a1a1a"/>
+      <ellipse cx="112" cy="91" rx="7" ry="8" fill="#1a1a1a"/>
+      <circle cx="90" cy="89" r="2.5" fill="#fff"/>
+      <circle cx="114" cy="89" r="2.5" fill="#fff"/>
+      <ellipse cx="100" cy="103" rx="6" ry="4" fill="#C05020"/>
+      <path d="M94 107 Q100 116 106 107" stroke="#8B3A1A" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <path d="M60 82 Q51 66 57 55" stroke="#CC8800" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M140 82 Q149 66 143 55" stroke="#CC8800" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M68 135 Q56 152 52 164" stroke="#CC8800" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M132 135 Q144 152 148 164" stroke="#CC8800" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <text x="100" y="188" text-anchor="middle" font-family="serif" font-size="10" font-weight="bold" fill="#FFD700" letter-spacing="2">PSU CLINIC</text>
+    </svg>
+  </div>
+  <div class="lion-roar-text">RAWR!</div>
+</div>
+
+<!-- ================================================================
+     SCREEN 1: SPLASH
+================================================================ -->
+<div id="screen-splash" class="screen active">
+  <div class="hex-grid">
+    <div class="hex-ring"></div><div class="hex-ring"></div>
+    <div class="hex-ring"></div><div class="hex-ring"></div>
+  </div>
+  <div class="splash-inner">
+    <div class="splash-logo-wrap">
+      <!-- Orbiting dots -->
+      <div class="med-cross-orbit" style="position:absolute">
+        <div class="med-cross-dot"></div>
+        <div class="med-cross-dot"></div>
+        <div class="med-cross-dot"></div>
+        <div class="med-cross-dot"></div>
+      </div>
+      <!-- Logo circle -->
+      <div class="splash-logo-circle">
+        <img src="logo.webp" alt="PSU Logo" id="splashLogoImg"
+          onerror="this.style.display='none';this.parentElement.innerHTML+='<i class=\'fas fa-university\' style=\'font-size:3.5rem;color:rgba(255,255,255,0.5);position:relative;z-index:1\'></i>'">
+      </div>
+      <!-- Reflection -->
+      <div class="splash-logo-reflection">
+        <img src="logo.webp" alt="" id="splashLogoReflect"
+          onerror="this.style.display='none'">
+      </div>
+    </div>
+
+    <div class="splash-university-name">Pangasinan State University</div>
+    <div class="splash-campus">Lingayen Campus · University Clinic</div>
+    <div class="splash-divider"></div>
+    <div class="splash-desc">
+      Welcome to the <strong>PSU Clinic Digital Queueing &amp; Schedule Management System</strong>. 
+      A modern platform providing <strong>students, patients, and clinic staff</strong> with seamless
+      real-time appointment scheduling, queue monitoring, and comprehensive health service management.
+    </div>
+    <div class="splash-system-badge">
+      <i class="fas fa-shield-heart"></i>
+      Digital Health Services Platform · v2.0
+    </div>
+    <div class="splash-loader">
+      <div class="loader-track"><div class="loader-fill"></div></div>
+      <div class="loader-label">Initializing System…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     SCREEN 2: ROLE SELECTION
+================================================================ -->
+<div id="screen-roles" class="screen">
+  <div class="roles-container">
+    <div class="roles-eyebrow">Access Portal</div>
+    <div class="roles-title">Select Your Role</div>
+    <div class="roles-underline"></div>
+
+    <div class="roles-grid">
+      <!-- Student Card -->
+      <div class="role-card student">
+        <div class="role-icon-wrap"><i class="fas fa-user-graduate"></i></div>
+        <div class="role-card-title">Student / Patient</div>
+        <div class="role-card-desc">
+          Schedule appointments, monitor your queue status in real-time, and receive notifications for your clinic visits.
+        </div>
+        <ul class="role-features">
+          <li><span class="feat-dot"></span>Appointment Scheduling</li>
+          <li><span class="feat-dot"></span>Real-time Queue Viewing</li>
+          <li><span class="feat-dot"></span>Notification Management</li>
+          <li><span class="feat-dot"></span>Visit History</li>
+        </ul>
+        <button class="role-enter-btn" onclick="openLoginModal('student')">
+          <span>Enter Student Portal</span>
+          <span class="btn-arrow"><i class="fas fa-arrow-right"></i></span>
+        </button>
+      </div>
+
+      <!-- Nurse Card -->
+      <div class="role-card nurse">
+        <div class="role-icon-wrap"><i class="fas fa-stethoscope"></i></div>
+        <div class="role-card-title">Clinic Staff / Nurse</div>
+        <div class="role-card-desc">
+          Monitor and call the queue, manage doctor schedules, and log patient consultations efficiently.
+        </div>
+        <ul class="role-features">
+          <li><span class="feat-dot"></span>Queue Monitoring &amp; Calling</li>
+          <li><span class="feat-dot"></span>Schedule Management</li>
+          <li><span class="feat-dot"></span>Patient Consultation Logging</li>
+          <li><span class="feat-dot"></span>Availability Settings</li>
+        </ul>
+        <button class="role-enter-btn" onclick="openLoginModal('nurse')">
+          <span>Enter Staff Portal</span>
+          <span class="btn-arrow"><i class="fas fa-arrow-right"></i></span>
+        </button>
+      </div>
+
+      <!-- Admin Card -->
+      <div class="role-card admin">
+        <div class="role-icon-wrap"><i class="fas fa-shield-halved"></i></div>
+        <div class="role-card-title">Administrator</div>
+        <div class="role-card-desc">
+          Manage user accounts, configure system settings, and access detailed statistical reports for the clinic.
+        </div>
+        <ul class="role-features">
+          <li><span class="feat-dot"></span>User Account Management</li>
+          <li><span class="feat-dot"></span>System Configuration</li>
+          <li><span class="feat-dot"></span>Statistical Reporting</li>
+          <li><span class="feat-dot"></span>Peak Hour Analysis</li>
+        </ul>
+        <button class="role-enter-btn" onclick="openLoginModal('admin')">
+          <span>Enter Admin Portal</span>
+          <span class="btn-arrow"><i class="fas fa-arrow-right"></i></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="roles-bottom">
+      <strong>PSU Clinic QMS</strong> · Pangasinan State University · © 2025 · All rights reserved
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     LOGIN MODAL (shared, role-adaptive)
+================================================================ -->
+<div class="modal-backdrop" id="loginModal">
+  <div class="login-modal" id="loginModalInner">
+    <div class="modal-glow-bar" id="modalGlowBar"></div>
+    <div class="modal-header-area">
+      <div class="modal-role-icon" id="modalRoleIcon"><i class="fas fa-user"></i></div>
+      <div class="modal-header-text">
+        <div class="modal-title" id="modalTitle">Sign In</div>
+        <div class="modal-subtitle" id="modalSubtitle">PSU Clinic — Access Portal</div>
+      </div>
+      <button class="modal-close-btn" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="error-msg" id="loginError"><i class="fas fa-circle-exclamation"></i> <span id="loginErrorText">Invalid credentials.</span></div>
+      <div class="form-group">
+        <label class="field-label">ID Number / Username</label>
+        <input class="field-input" id="loginUser" type="text" placeholder="e.g. student01 / nurse01 / admin01">
+      </div>
+      <div class="form-group">
+        <label class="field-label">Password</label>
+        <div class="pass-wrap">
+          <input class="field-input" id="loginPass" type="password" placeholder="Enter your password">
+          <button class="pass-toggle" onclick="togglePass()" type="button"><i class="fas fa-eye" id="passToggleIcon"></i></button>
+        </div>
+      </div>
+      <div style="text-align:right;margin-bottom:18px">
+        <a href="#" style="font-size:0.78rem;color:var(--text-muted)" onclick="toast('Password reset coming soon.','fa-envelope','gold')">Forgot password?</a>
+      </div>
+      <button class="modal-submit-btn" id="loginSubmitBtn" onclick="doLogin()">
+        <i class="fas fa-right-to-bracket"></i> Sign In to Portal
+      </button>
+      <div class="login-hint" id="loginHint">
+        Default: <strong id="hintUser">student01</strong> / <strong id="hintPass">student123</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     SCREEN 3: DASHBOARD (adaptive to role)
+================================================================ -->
+<div id="screen-dashboard" class="screen">
+  <!-- Nav -->
+  <nav class="dash-nav" id="dashNav">
+    <div class="dash-nav-inner">
+      <div class="nav-brand" onclick="confirmLogout()">
+        <div class="nav-brand-logo">
+          <img src="" alt="PSU" onerror="this.style.display='none';this.parentElement.innerHTML='<i class=\'fas fa-university\' style=\'color:rgba(255,215,0,0.6);font-size:1rem\'></i>'">
+        </div>
+        <div class="nav-brand-text">
+          <div class="title">PSU Clinic</div>
+          <div class="sub">Queue Management System</div>
+        </div>
+      </div>
+
+      <div class="nav-module-tabs" id="navTabs"></div>
+
+      <div class="nav-right">
+        <div class="nav-clock" id="liveClock">00:00:00</div>
+        <div class="nav-notif-btn" onclick="toast('You have 2 unread notifications.','fa-bell','gold')">
+          <i class="fas fa-bell"></i><div class="notif-dot"></div>
+        </div>
+        <div class="nav-user-btn">
+          <div class="nav-user-info">
+            <div class="nav-user-name" id="navUserName">—</div>
+            <div class="nav-user-role" id="navUserRole">—</div>
+          </div>
+          <div class="nav-avatar" id="navAvatar"><i class="fas fa-user"></i></div>
+        </div>
+        <button class="logout-btn" onclick="confirmLogout()"><i class="fas fa-right-from-bracket"></i> Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Dashboard body (content injected by JS) -->
+  <div class="dash-body" id="dashBody"></div>
+
+  <div class="dash-footer">
+    <strong>PSU Clinic Digital Queueing &amp; Schedule Management System</strong> ·
+    Pangasinan State University · Lingayen Campus · © 2025
+  </div>
+</div>
+
+<!-- ================================================================
+     APPOINTMENT MODAL (styled like Image 2)
+================================================================ -->
+<div class="modal-backdrop" id="apptModal">
+  <div class="app-modal">
+    <div class="modal-glow-bar student-bar"></div>
+    <div class="app-modal-head">
+      <div>
+        <div class="app-modal-title">Book Appointment</div>
+        <div class="app-modal-sub">PSU Clinic — Schedule a Visit</div>
+      </div>
+      <button class="modal-close-btn" onclick="closeModal('apptModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="app-modal-body">
+      <div class="field-row" style="margin-bottom:18px">
+        <div>
+          <label class="field-label">Date</label>
+          <input class="field-input" type="date">
+        </div>
+        <div>
+          <label class="field-label">Preferred Time</label>
+          <select class="field-select">
+            <option>08:00 AM</option><option>09:00 AM</option><option>10:00 AM</option>
+            <option>11:00 AM</option><option>01:00 PM</option><option>02:00 PM</option>
+            <option>03:00 PM</option><option>04:00 PM</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:18px">
+        <label class="field-label">Consultation Type</label>
+        <select class="field-select">
+          <option>General Consultation</option><option>Fever / Flu</option>
+          <option>Injury / Wound Dressing</option><option>Dental Consultation</option>
+          <option>Mental Health Counseling</option><option>Laboratory Request</option>
+        </select>
+      </div>
+      <div style="margin-bottom:18px">
+        <label class="field-label">Preferred Doctor</label>
+        <select class="field-select">
+          <option>Any Available</option><option>Dr. Reyes</option>
+          <option>Dr. Santos</option><option>Dr. Lim</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Chief Complaint / Reason</label>
+        <textarea class="field-textarea" placeholder="Briefly describe your symptoms or reason for visit…"></textarea>
+      </div>
+    </div>
+    <div class="app-modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('apptModal')">Cancel</button>
+      <button class="modal-submit-btn student-btn btn-lg" style="width:auto;padding:13px 32px" onclick="closeModal('apptModal');toast('Appointment booked successfully!','fa-calendar-check','green')">
+        Confirm Booking &nbsp;<i class="fas fa-arrow-right"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Consultation Modal -->
+<div class="modal-backdrop" id="logModal">
+  <div class="app-modal" style="max-width:600px">
+    <div class="modal-glow-bar nurse-bar"></div>
+    <div class="app-modal-head">
+      <div>
+        <div class="app-modal-title">Log Consultation</div>
+        <div class="app-modal-sub">PSU Clinic — Patient Record Entry</div>
+      </div>
+      <button class="modal-close-btn" onclick="closeModal('logModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="app-modal-body">
+      <div class="field-row" style="margin-bottom:18px">
+        <div><label class="field-label">Patient Name</label><input class="field-input" type="text" placeholder="Full name"></div>
+        <div><label class="field-label">Student / Employee ID</label><input class="field-input" type="text" placeholder="PSU-XXXX"></div>
+      </div>
+      <div style="margin-bottom:18px"><label class="field-label">Chief Complaint</label><input class="field-input" type="text" placeholder="e.g. Headache, fever since yesterday"></div>
+      <div class="field-row" style="margin-bottom:18px">
+        <div><label class="field-label">Blood Pressure</label><input class="field-input" placeholder="120/80 mmHg"></div>
+        <div><label class="field-label">Temperature</label><input class="field-input" placeholder="36.5°C"></div>
+      </div>
+      <div style="margin-bottom:18px"><label class="field-label">Diagnosis / Assessment</label><textarea class="field-textarea" placeholder="Clinical findings and diagnosis…"></textarea></div>
+      <div style="margin-bottom:18px">
+        <label class="field-label">Disposition</label>
+        <select class="field-select">
+          <option>Treated &amp; Released</option><option>Referred to Hospital</option>
+          <option>For Follow-up</option><option>Home Rest Advised</option>
+        </select>
+      </div>
+    </div>
+    <div class="app-modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('logModal')">Cancel</button>
+      <button class="modal-submit-btn nurse-btn btn-lg" style="width:auto;padding:13px 32px" onclick="closeModal('logModal');toast('Consultation record saved!','fa-notes-medical','green')">
+        Save Record &nbsp;<i class="fas fa-floppy-disk"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal-backdrop" id="addUserModal">
+  <div class="app-modal">
+    <div class="modal-glow-bar admin-bar"></div>
+    <div class="app-modal-head">
+      <div><div class="app-modal-title">Add New User</div><div class="app-modal-sub">System — Account Creation</div></div>
+      <button class="modal-close-btn" onclick="closeModal('addUserModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="app-modal-body">
+      <div class="field-row" style="margin-bottom:18px">
+        <div><label class="field-label">First Name</label><input class="field-input" type="text"></div>
+        <div><label class="field-label">Last Name</label><input class="field-input" type="text"></div>
+      </div>
+      <div style="margin-bottom:18px"><label class="field-label">ID / Username</label><input class="field-input" type="text" placeholder="PSU-2025-XXXX"></div>
+      <div style="margin-bottom:18px"><label class="field-label">Email</label><input class="field-input" type="email" placeholder="user@psu.edu.ph"></div>
+      <div style="margin-bottom:18px">
+        <label class="field-label">Role</label>
+        <select class="field-select"><option>Student</option><option>Nurse</option><option>Doctor</option><option>Admin</option></select>
+      </div>
+      <div><label class="field-label">Temporary Password</label><input class="field-input" type="password" placeholder="Min. 8 characters"></div>
+    </div>
+    <div class="app-modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('addUserModal')">Cancel</button>
+      <button class="modal-submit-btn admin-btn btn-lg" style="width:auto;padding:13px 32px" onclick="closeModal('addUserModal');toast('User account created!','fa-user-plus','purple')">
+        Create Account &nbsp;<i class="fas fa-user-plus"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     JAVASCRIPT
+================================================================ -->
+<script>
+/* ============================================================
+   CREDENTIALS
+============================================================ */
+const USERS = {
+  student: { username:'student01', password:'student123', name:'Juan Dela Cruz',    role:'Student / Patient',  id:'PSU-2024-0001' },
+  nurse:   { username:'nurse01',   password:'nurse123',   name:'Nurse Ana Bautista', role:'Clinic Staff / Nurse', id:'STAFF-001' },
+  admin:   { username:'admin01',   password:'admin123',   name:'Admin System',       role:'Administrator',        id:'ADMIN-001' },
+};
+let currentRole = null;
+let currentUser = null;
+
+/* ============================================================
+   SCREEN MANAGER
+============================================================ */
+function showScreen(id, withLion=false) {
+  if (withLion) {
+    lionTransition(() => _activateScreen(id));
+  } else {
+    _activateScreen(id);
+  }
+}
+function _activateScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = '';
+  });
+  const s = document.getElementById(id);
+  s.classList.add('active');
+  if (id === 'screen-roles') triggerReveal();
+  if (id === 'screen-dashboard') { setTimeout(triggerReveal, 100); }
+}
+
+/* Lion transition */
+function lionTransition(cb) {
+  const ov = document.getElementById('lion-overlay');
+  ov.classList.add('active');
+  setTimeout(() => {
+    cb();
+    setTimeout(() => ov.classList.remove('active'), 400);
+  }, 1400);
+}
+
+/* ============================================================
+   SPLASH → ROLES
+============================================================ */
+window.addEventListener('DOMContentLoaded', () => {
+  generateParticles();
+  startClock();
+  setTimeout(() => {
+    lionTransition(() => showScreen('screen-roles'));
+  }, 4500);
+});
+
+function generateParticles() {
+  const count = 28;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random() * 4 + 2;
+    const colors = ['rgba(26,86,255,0.5)','rgba(0,168,107,0.5)','rgba(255,215,0,0.4)','rgba(6,182,212,0.4)'];
+    p.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:${Math.random()*100}%;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-duration:${Math.random()*15+10}s;
+      animation-delay:${Math.random()*10}s;
+    `;
+    document.body.appendChild(p);
+  }
+}
+
+/* ============================================================
+   LOGIN MODAL
+============================================================ */
+const roleConfig = {
+  student: {
+    title:'Student Portal', subtitle:'PSU Clinic — Student / Patient Access',
+    bar:'student-bar', iconClass:'student-icon', icon:'fa-user-graduate',
+    btnClass:'student-btn', hintUser:'student01', hintPass:'student123',
+    inputFocus:'student-focus',
+  },
+  nurse: {
+    title:'Staff Portal', subtitle:'PSU Clinic — Clinic Staff / Nurse Access',
+    bar:'nurse-bar', iconClass:'nurse-icon', icon:'fa-stethoscope',
+    btnClass:'nurse-btn', hintUser:'nurse01', hintPass:'nurse123',
+    inputFocus:'nurse-focus',
+  },
+  admin: {
+    title:'Admin Portal', subtitle:'PSU Clinic — Administrator Access',
+    bar:'admin-bar', iconClass:'admin-icon', icon:'fa-shield-halved',
+    btnClass:'admin-btn', hintUser:'admin01', hintPass:'admin123',
+    inputFocus:'admin-focus',
+  },
+};
+
+function openLoginModal(role) {
+  currentRole = role;
+  const cfg = roleConfig[role];
+  // Glow bar
+  const bar = document.getElementById('modalGlowBar');
+  bar.className = 'modal-glow-bar ' + cfg.bar;
+  // Icon
+  const icon = document.getElementById('modalRoleIcon');
+  icon.className = 'modal-role-icon ' + cfg.iconClass;
+  icon.innerHTML = `<i class="fas ${cfg.icon}"></i>`;
+  // Texts
+  document.getElementById('modalTitle').textContent = cfg.title;
+  document.getElementById('modalSubtitle').textContent = cfg.subtitle;
+  // Button
+  const btn = document.getElementById('loginSubmitBtn');
+  btn.className = 'modal-submit-btn ' + cfg.btnClass;
+  // Hint
+  document.getElementById('hintUser').textContent = cfg.hintUser;
+  document.getElementById('hintPass').textContent = cfg.hintPass;
+  // Input styling
+  const inp = document.getElementById('loginUser');
+  inp.className = 'field-input ' + cfg.inputFocus;
+  const inp2 = document.getElementById('loginPass');
+  inp2.className = 'field-input ' + cfg.inputFocus;
+  // Clear
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').classList.remove('show');
+  // Open
+  document.getElementById('loginModal').classList.add('open');
+  setTimeout(() => document.getElementById('loginUser').focus(), 400);
+}
+
+function closeLoginModal() {
+  document.getElementById('loginModal').classList.remove('open');
+}
+
+function togglePass() {
+  const inp = document.getElementById('loginPass');
+  const ico = document.getElementById('passToggleIcon');
+  if (inp.type === 'password') {
+    inp.type = 'text'; ico.className = 'fas fa-eye-slash';
+  } else {
+    inp.type = 'password'; ico.className = 'fas fa-eye';
+  }
+}
+
+function doLogin() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
+  const errEl = document.getElementById('loginError');
+  const errTxt = document.getElementById('loginErrorText');
+  errEl.classList.remove('show');
+
+  if (!user || !pass) {
+    errTxt.textContent = 'Please enter your ID and password.';
+    errEl.classList.add('show'); return;
+  }
+
+  const expected = USERS[currentRole];
+  if (user !== expected.username || pass !== expected.password) {
+    errTxt.textContent = `Invalid credentials. Use: ${expected.username} / ${expected.password}`;
+    errEl.classList.add('show');
+    // Shake modal
+    const modal = document.getElementById('loginModalInner');
+    modal.style.animation = 'none';
+    requestAnimationFrame(() => { modal.style.animation = ''; });
+    return;
+  }
+
+  currentUser = expected;
+  closeLoginModal();
+  toast(`Welcome, ${currentUser.name}!`, 'fa-check-circle', 'green');
+  setTimeout(() => {
+    buildDashboard(currentRole);
+    showScreen('screen-dashboard', true);
+  }, 400);
+}
+
+/* Enter key on password field */
+document.getElementById('loginPass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+document.getElementById('loginUser').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('loginPass').focus();
+});
+
+/* ============================================================
+   LOGOUT
+============================================================ */
+function confirmLogout() {
+  if (!confirm('Are you sure you want to logout?')) return;
+  currentRole = null; currentUser = null;
+  toast('You have been logged out.', 'fa-right-from-bracket', 'gold');
+  showScreen('screen-roles', true);
+}
+
+/* ============================================================
+   DASHBOARD BUILDER
+============================================================ */
+function buildDashboard(role) {
+  const themeMap = { student:'student-theme', nurse:'nurse-theme', admin:'admin-theme' };
+  const body = document.getElementById('dashBody');
+  const nav = document.getElementById('screen-dashboard');
+
+  // Remove old themes
+  nav.classList.remove('student-theme','nurse-theme','admin-theme');
+  nav.classList.add(themeMap[role]);
+
+  // Nav user info
+  document.getElementById('navUserName').textContent = currentUser.name;
+  document.getElementById('navUserRole').textContent = currentUser.role;
+  const avatarColors = { student:'var(--grad-role-student)', nurse:'var(--grad-role-nurse)', admin:'var(--grad-role-admin)' };
+  const navAv = document.getElementById('navAvatar');
+  navAv.style.background = avatarColors[role];
+  navAv.innerHTML = `<i class="fas ${roleConfig[role].icon}"></i>`;
+
+  // Build nav tabs + body
+  if (role === 'student') buildStudentDash(body);
+  if (role === 'nurse')   buildNurseDash(body);
+  if (role === 'admin')   buildAdminDash(body);
+}
+
+/* ============================================================
+   STUDENT DASHBOARD
+============================================================ */
+function buildStudentDash(body) {
+  const tabs = document.getElementById('navTabs');
+  tabs.innerHTML = `
+    <button class="nav-module-tab active" onclick="switchDTab(this,'s-overview')"><i class="fas fa-gauge"></i> Overview</button>
+    <button class="nav-module-tab" onclick="switchDTab(this,'s-queue')"><i class="fas fa-list-ol"></i> My Queue</button>
+    <button class="nav-module-tab" onclick="switchDTab(this,'s-appt')"><i class="fas fa-calendar-days"></i> Appointments</button>
+    <button class="nav-module-tab" onclick="switchDTab(this,'s-notif')"><i class="fas fa-bell"></i> Notifications</button>
+  `;
+  body.innerHTML = `
+  <!-- Overview -->
+  <div id="s-overview" class="sub-panel active">
+    <div class="welcome-banner reveal">
+      <div class="wb-greeting"><i class="fas fa-stethoscope" style="color:var(--gold);margin-right:12px"></i>Welcome, Juan!</div>
+      <div class="wb-sub">Track your queue, book appointments, and get real-time clinic updates all in one place.</div>
+      <div class="wb-actions">
+        <button class="btn btn-primary-s btn-lg" onclick="openModal('apptModal')"><i class="fas fa-calendar-plus"></i> Book Appointment</button>
+        <button class="btn btn-ghost" onclick="switchDTabById('s-queue')"><i class="fas fa-list-ol"></i> View My Queue</button>
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card reveal" style="--stat-glow:rgba(26,86,255,0.1);animation-delay:.1s">
+        <div class="stat-icon" style="background:var(--grad-role-student)"><i class="fas fa-ticket"></i></div>
+        <div class="stat-value" style="color:var(--gold)">A-047</div>
+        <div class="stat-label">My Queue Number</div>
+        <div class="stat-trend trend-flat"><i class="fas fa-signal"></i> 8 patients ahead</div>
+      </div>
+      <div class="stat-card reveal" style="--stat-glow:rgba(6,182,212,0.1);animation-delay:.2s">
+        <div class="stat-icon" style="background:var(--grad-blue)"><i class="fas fa-clock"></i></div>
+        <div class="stat-value">~24<span style="font-size:1.2rem">m</span></div>
+        <div class="stat-label">Estimated Wait</div>
+        <div class="stat-trend trend-flat"><i class="fas fa-satellite-dish"></i> Live update</div>
+      </div>
+      <div class="stat-card reveal" style="--stat-glow:rgba(0,168,107,0.1);animation-delay:.3s">
+        <div class="stat-icon" style="background:var(--grad-role-nurse)"><i class="fas fa-calendar-check"></i></div>
+        <div class="stat-value">3</div>
+        <div class="stat-label">Appointments This Month</div>
+        <div class="stat-trend trend-up"><i class="fas fa-check"></i> 2 completed</div>
+      </div>
+      <div class="stat-card reveal" style="--stat-glow:rgba(255,215,0,0.08);animation-delay:.4s">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#b8860b,var(--gold))"><i class="fas fa-bell"></i></div>
+        <div class="stat-value">2</div>
+        <div class="stat-label">Notifications</div>
+        <div class="stat-trend trend-flat"><i class="fas fa-envelope"></i> 1 unread</div>
+      </div>
+    </div>
+    <div class="grid-2 reveal">
+      <div class="glass-card">
+        <div class="card-head">
+          <div class="card-title"><div class="card-icon"><i class="fas fa-satellite-dish"></i></div>Live Queue Status</div>
+          <span class="badge badge-green"><span class="pulse-dot"></span> Live</span>
+        </div>
+        <div class="card-body">
+          <div class="now-serving-board" style="margin-bottom:20px">
+            <div class="ns-label">Now Serving</div>
+            <div class="ns-number">A-039</div>
+            <div class="ns-name">Maria Santos · General Check-up</div>
+          </div>
+          <div class="queue-ticket">
+            <div style="font-size:0.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Your Ticket</div>
+            <div class="qt-num">A-047</div>
+            <div class="qt-label">Patients Ahead of You</div>
+            <div class="qt-eta">8 · ~24 min</div>
+            <div style="margin-top:20px;display:flex;gap:10px;justify-content:center">
+              <button class="btn btn-sm btn-primary-s" onclick="toast('SMS notification enabled!','fa-bell','blue')"><i class="fas fa-bell"></i> Notify Me</button>
+              <button class="btn btn-sm btn-ghost" onclick="toast('Queue refreshed.','fa-arrows-rotate','green')"><i class="fas fa-arrows-rotate"></i> Refresh</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="glass-card">
+        <div class="card-head">
+          <div class="card-title"><div class="card-icon"><i class="fas fa-calendar-days"></i></div>Recent Appointments</div>
+          <button class="btn btn-sm btn-primary-s" onclick="openModal('apptModal')"><i class="fas fa-plus"></i> New</button>
+        </div>
+        <div class="card-body">
+          <div class="timeline">
+            <div class="tl-item tl-done"><div class="tl-dot"></div>
+              <div class="tl-content"><div class="tl-title">General Check-up <span class="badge badge-teal" style="margin-left:8px">Done</span></div><div class="tl-meta"><span><i class="fas fa-calendar"></i> May 2, 2025</span><span><i class="fas fa-clock"></i> 9:00 AM</span></div></div>
+            </div>
+            <div class="tl-item tl-done"><div class="tl-dot"></div>
+              <div class="tl-content"><div class="tl-title">Dental Consult <span class="badge badge-teal" style="margin-left:8px">Done</span></div><div class="tl-meta"><span><i class="fas fa-calendar"></i> Apr 18</span><span><i class="fas fa-clock"></i> 2:00 PM</span></div></div>
+            </div>
+            <div class="tl-item tl-pending"><div class="tl-dot"></div>
+              <div class="tl-content"><div class="tl-title">Follow-up Check <span class="badge badge-gold" style="margin-left:8px">Upcoming</span></div><div class="tl-meta"><span><i class="fas fa-calendar"></i> May 8</span><span><i class="fas fa-clock"></i> 10:30 AM</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Queue Detail -->
+  <div id="s-queue" class="sub-panel">
+    <div class="page-head">
+      <div class="page-eyebrow">Student Portal</div>
+      <div class="page-title">My Queue Status</div>
+      <div class="page-sub">Real-time position tracking in the PSU Clinic queue.</div>
+    </div>
+    <div class="grid-2">
+      <div class="glass-card reveal">
+        <div class="card-body" style="padding:36px;text-align:center">
+          <div class="ns-label">Your Ticket Number</div>
+          <div class="qt-num" style="font-size:7rem;margin:16px 0">A-047</div>
+          <div style="font-size:0.85rem;color:var(--text-soft);margin-bottom:24px">8 patients ahead · ~24 minutes estimated wait</div>
+          <div class="prog-track" style="margin-bottom:8px"><div class="prog-fill" style="width:65%;background:var(--grad-blue)"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text-muted);margin-bottom:24px"><span>Queue start</span><span>Your turn</span></div>
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-primary-s" onclick="toast('Notification set for when you are next!','fa-bell','blue')"><i class="fas fa-bell"></i> Alert Me When Near</button>
+            <button class="btn btn-danger btn-sm" onclick="toast('Ticket cancelled.','fa-ban','red')"><i class="fas fa-ban"></i> Cancel Ticket</button>
+          </div>
+        </div>
+      </div>
+      <div class="glass-card reveal">
+        <div class="card-head"><div class="card-title"><div class="card-icon"><i class="fas fa-list-ol"></i></div>Live Queue</div><span class="badge badge-green"><span class="pulse-dot"></span>Live</span></div>
+        <div class="card-body"><div class="queue-list" id="studentQueueList"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Appointments -->
+  <div id="s-appt" class="sub-panel">
+    <div class="page-head reveal">
+      <div class="page-eyebrow">Student Portal</div>
+      <div class="page-title">My Appointments</div>
+      <div class="page-sub">View, manage, and schedule your clinic appointments.</div>
+    </div>
+    <div class="glass-card reveal">
+      <div class="card-head">
+        <div class="card-title"><div class="card-icon"><i class="fas fa-calendar-days"></i></div>All Appointments</div>
+        <button class="btn btn-primary-s" onclick="openModal('apptModal')"><i class="fas fa-plus"></i> Book New</button>
+      </div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Time</th><th>Type</th><th>Doctor</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>May 8, 2025</td><td>10:30 AM</td><td>Follow-up</td><td>Dr. Reyes</td><td><span class="badge badge-gold">Upcoming</span></td><td><button class="btn btn-sm btn-ghost" onclick="toast('Rescheduling…','fa-calendar','gold')">Reschedule</button></td></tr>
+              <tr><td>May 2, 2025</td><td>9:00 AM</td><td>General Check-up</td><td>Dr. Reyes</td><td><span class="badge badge-green">Done</span></td><td><button class="btn btn-sm btn-ghost" onclick="toast('Viewing record…','fa-eye','blue')">View</button></td></tr>
+              <tr><td>Apr 18, 2025</td><td>2:00 PM</td><td>Dental</td><td>Dr. Santos</td><td><span class="badge badge-green">Done</span></td><td><button class="btn btn-sm btn-ghost" onclick="toast('Viewing record…','fa-eye','blue')">View</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications -->
+  <div id="s-notif" class="sub-panel">
+    <div class="page-head reveal">
+      <div class="page-eyebrow">Student Portal</div>
+      <div class="page-title">Notifications</div>
+    </div>
+    <div class="glass-card reveal">
+      <div class="card-head">
+        <div class="card-title"><div class="card-icon"><i class="fas fa-bell"></i></div>All Notifications</div>
+        <button class="btn btn-sm btn-ghost" onclick="toast('All marked as read.','fa-check','green')">Mark All Read</button>
+      </div>
+      <div class="card-body">
+        <div class="queue-list">
+          <div class="queue-item" style="border-left:3px solid var(--med-blue-light)">
+            <div style="color:var(--med-blue-light);font-size:1.4rem"><i class="fas fa-signal"></i></div>
+            <div class="q-info"><div class="q-name">Queue Update — 8 patients ahead</div><div class="q-sub">Estimated wait: ~24 minutes · 5 min ago</div></div>
+            <span class="badge badge-blue">New</span>
+          </div>
+          <div class="queue-item" style="border-left:3px solid var(--gold)">
+            <div style="color:var(--gold);font-size:1.4rem"><i class="fas fa-calendar-check"></i></div>
+            <div class="q-info"><div class="q-name">Appointment Reminder</div><div class="q-sub">Follow-up on May 8 at 10:30 AM with Dr. Reyes · 2h ago</div></div>
+            <span class="badge badge-gold">Reminder</span>
+          </div>
+          <div class="queue-item" style="border-left:3px solid var(--teal)">
+            <div style="color:var(--teal);font-size:1.4rem"><i class="fas fa-info-circle"></i></div>
+            <div class="q-info"><div class="q-name">Clinic Notice — Extended Hours</div><div class="q-sub">PSU Clinic operates until 6:00 PM this week · Yesterday</div></div>
+            <span class="badge badge-teal">Info</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  `;
+
+  // Populate student queue list
+  renderStudentQueue();
+}
+
+function renderStudentQueue() {
+  const el = document.getElementById('studentQueueList');
+  if (!el) return;
+  const q = [
+    {n:'A-039',name:'Maria Santos',s:'Now Serving',b:'badge-green'},
+    {n:'A-040',name:'Jose Reyes',s:'2nd',b:'badge-teal'},
+    {n:'A-041',name:'Ana Torres',s:'3rd',b:'badge-teal'},
+    {n:'A-042',name:'Pedro Lim',s:'4th',b:'badge-blue'},
+    {n:'A-043',name:'Rosa Fernandez',s:'5th',b:'badge-blue'},
+    {n:'A-047',name:'Juan Dela Cruz (You)',s:'9th',b:'badge-gold'},
+  ];
+  el.innerHTML = q.map(p => `
+    <div class="queue-item" ${p.n==='A-047'?'style="border-color:rgba(255,215,0,0.3);background:rgba(255,215,0,0.04)"':''}>
+      <div class="q-num" style="color:var(--gold)">${p.n}</div>
+      <div class="q-info"><div class="q-name">${p.name}</div></div>
+      <span class="badge ${p.b}">${p.s==='Now Serving'?'<span class="pulse-dot"></span> '+p.s:p.s}</span>
+    </div>`).join('');
+}
+
+/* ============================================================
+   NURSE DASHBOARD
+============================================================ */
+let nurseQueueIdx = 0;
+const nurseQueue = [
+  {n:'A-039',name:'Maria Santos',   concern:'General Check-up'},
+  {n:'A-040',name:'Jose Reyes',     concern:'Fever / Flu'},
+  {n:'A-041',name:'Ana Torres',     concern:'Wound Dressing'},
+  {n:'A-042',name:'Pedro Lim',      concern:'Hypertension'},
+  {n:'A-043',name:'Rosa Fernandez', concern:'Dental'},
+  {n:'A-044',name:'Carlo Mendez',   concern:'Mental Health'},
+  {n:'A-045',name:'Liza Cruz',      concern:'General Check-up'},
+  {n:'A-046',name:'Ramon Aquino',   concern:'Fever / Flu'},
+  {n:'A-047',name:'Juan Dela Cruz', concern:'Follow-up'},
+];
+
+function buildNurseDash(body) {
+  const tabs = document.getElementById('navTabs');
+  tabs.innerHTML = `
+    <button class="nav-module-tab active" onclick="switchDTab(this,'n-queue')"><i class="fas fa-satellite-dish"></i> Queue Monitor</button>
+    <button class="nav-module-tab" onclick="switchDTab(this,'n-schedule')"><i class="fas fa-calendar-week"></i> Schedule</button>
+    <button class="nav-module-tab" onclick="switchDTab(this,'n-log')"><i class="fas fa-clipboard-list"></i> Consult Log</button>
+  `;
+  body.innerHTML = `
+  <!-- Queue Monitor -->
+  <div id="n-queue" class="sub-panel active">
+    <div class="page-head reveal">
+      <div class="page-eyebrow">Clinic Staff Panel</div>
+      <div class="page-title">Queue Monitor</div>
+      <div class="page-sub">Manage patient flow and call patients in real time.</div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <div class="now-serving-board reveal" style="border-color:rgba(0,168,107,0.25)">
+          <div class="ns-label">Currently Serving</div>
+          <div class="ns-number" id="nurseServing" style="color:var(--psu-green-glow)">${nurseQueue[nurseQueueIdx].n}</div>
+          <div class="ns-name" id="nurseServingName">${nurseQueue[nurseQueueIdx].name} · ${nurseQueue[nurseQueueIdx].concern}</div>
+          <div style="display:flex;justify-content:center;gap:12px;margin-top:24px;position:relative;z-index:1">
+            <button class="btn btn-gold btn-lg" onclick="callNext()"><i class="fas fa-forward-step"></i> Call Next</button>
+            <button class="btn btn-primary-n" onclick="openModal('logModal')"><i class="fas fa-notes-medical"></i> Log</button>
+            <button class="btn btn-danger btn-sm" onclick="toast('Patient skipped.','fa-forward-fast','red')"><i class="fas fa-forward-fast"></i> Skip</button>
+          </div>
+        </div>
+        <div class="stat-grid" style="margin-top:18px">
+          <div class="stat-card reveal" style="--stat-glow:rgba(0,168,107,0.12)">
+            <div class="stat-icon" style="background:var(--grad-role-nurse)"><i class="fas fa-users"></i></div>
+            <div class="stat-value">23</div><div class="stat-label">In Queue</div>
+          </div>
+          <div class="stat-card reveal" style="--stat-glow:rgba(6,182,212,0.1)">
+            <div class="stat-icon" style="background:var(--grad-blue)"><i class="fas fa-user-check"></i></div>
+            <div class="stat-value">17</div><div class="stat-label">Served Today</div>
+          </div>
+        </div>
+      </div>
+      <div class="glass-card reveal">
+        <div class="card-head"><div class="card-title"><div class="card-icon" style="background:var(--grad-role-nurse)"><i class="fas fa-list-ol"></i></div>Waiting Queue</div><span class="badge badge-green"><span class="pulse-dot"></span>Live</span></div>
+        <div class="card-body" style="max-height:440px;overflow-y:auto"><div class="queue-list" id="nurseQueueList"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Schedule -->
+  <div id="n-schedule" class="sub-panel">
+    <div class="page-head reveal"><div class="page-eyebrow">Clinic Staff Panel</div><div class="page-title">Schedule Management</div></div>
+    <div class="grid-2">
+      <div class="glass-card reveal">
+        <div class="card-head">
+          <div class="card-title"><div class="card-icon" style="background:var(--grad-role-nurse)"><i class="fas fa-calendar-week"></i></div>Weekly Availability</div>
+          <button class="btn btn-sm btn-primary-n" onclick="toast('Schedule saved!','fa-check','green')"><i class="fas fa-floppy-disk"></i> Save</button>
+        </div>
+        <div class="card-body" id="weeklyGrid"></div>
+      </div>
+      <div class="glass-card reveal">
+        <div class="card-head"><div class="card-title"><div class="card-icon" style="background:var(--grad-role-nurse)"><i class="fas fa-calendar-day"></i></div>Today's Appointments</div></div>
+        <div class="card-body"><div class="queue-list" id="todayAppts"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consult Log -->
+  <div id="n-log" class="sub-panel">
+    <div class="page-head reveal"><div class="page-eyebrow">Clinic Staff Panel</div><div class="page-title">Consultation Log</div></div>
+    <div class="glass-card reveal">
+      <div class="card-head">
+        <div class="card-title"><div class="card-icon" style="background:var(--grad-role-nurse)"><i class="fas fa-clipboard-list"></i></div>Patient Records</div>
+        <button class="btn btn-primary-n btn-sm" onclick="openModal('logModal')"><i class="fas fa-plus"></i> New Entry</button>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+          <input class="field-input" style="max-width:260px" type="text" placeholder="Search patient…">
+          <select class="field-select" style="max-width:180px">
+            <option>All Ailments</option><option>Fever / Flu</option><option>Hypertension</option><option>Injury</option><option>Dental</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date & Time</th><th>Patient</th><th>Complaint</th><th>Diagnosis</th><th>Staff</th><th>Actions</th></tr></thead>
+            <tbody id="logTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  `;
+  renderNurseQueue();
+  renderWeeklyGrid();
+  renderTodayAppts();
+  renderLogTable();
+}
+
+function renderNurseQueue() {
+  const el = document.getElementById('nurseQueueList');
+  if (!el) return;
+  el.innerHTML = nurseQueue.slice(nurseQueueIdx).map((p,i) => `
+    <div class="queue-item">
+      <div class="q-num" style="color:var(--psu-green-glow)">${p.n}</div>
+      <div class="q-info"><div class="q-name">${p.name}</div><div class="q-sub"><i class="fas fa-notes-medical"></i> ${p.concern}</div></div>
+      ${i===0
+        ? '<span class="badge badge-green"><span class="pulse-dot"></span> Serving</span>'
+        : `<span class="badge badge-teal">#${i+1}</span>`}
+    </div>`).join('');
+}
+
+function callNext() {
+  nurseQueueIdx = Math.min(nurseQueueIdx + 1, nurseQueue.length - 1);
+  const p = nurseQueue[nurseQueueIdx];
+  const s = document.getElementById('nurseServing');
+  const n = document.getElementById('nurseServingName');
+  if (s) s.textContent = p.n;
+  if (n) n.textContent = p.name + ' · ' + p.concern;
+  renderNurseQueue();
+  toast(`Now calling: ${p.n} — ${p.name}`, 'fa-bullhorn', 'green');
+}
+
+function renderWeeklyGrid() {
+  const el = document.getElementById('weeklyGrid');
+  if (!el) return;
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const defs = [0,0,0,0,0,2,2];
+  el.innerHTML = days.map((d,i) => `
+    <div class="week-row">
+      <div class="week-day">${d}</div>
+      <select class="field-select" style="max-width:160px;font-size:0.8rem">
+        ${['7:30–12:00','12:00–17:00','No Duty'].map((s,si)=>`<option ${si===defs[i]?'selected':''}>${s}</option>`).join('')}
+      </select>
+    </div>`).join('');
+}
+
+function renderTodayAppts() {
+  const el = document.getElementById('todayAppts');
+  if (!el) return;
+  const list = [
+    {t:'9:00 AM',n:'Maria Santos',type:'General Check-up',s:'done'},
+    {t:'9:30 AM',n:'Jose Reyes',  type:'Fever / Flu',    s:'done'},
+    {t:'10:00 AM',n:'Ana Torres', type:'Wound Dressing', s:'serving'},
+    {t:'10:30 AM',n:'Pedro Lim',  type:'Hypertension',  s:'pending'},
+    {t:'11:00 AM',n:'Rosa Fernandez',type:'Dental',      s:'pending'},
+  ];
+  el.innerHTML = list.map(a => `
+    <div class="queue-item">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted);min-width:64px">${a.t}</div>
+      <div class="q-info"><div class="q-name">${a.n}</div><div class="q-sub">${a.type}</div></div>
+      ${a.s==='done'?'<span class="badge badge-green">Done</span>':a.s==='serving'?'<span class="badge badge-teal"><span class="pulse-dot"></span> Now</span>':'<span class="badge badge-gold">Pending</span>'}
+    </div>`).join('');
+}
+
+function renderLogTable() {
+  const el = document.getElementById('logTableBody');
+  if (!el) return;
+  const rows = [
+    {d:'May 1, 09:14',p:'Maria Santos',c:'Fever',dx:'Acute Febrile Illness',s:'Nurse Bautista'},
+    {d:'May 1, 09:32',p:'Jose Reyes',  c:'Headache',dx:'Tension Headache',  s:'Dr. Reyes'},
+    {d:'May 1, 10:05',p:'Ana Torres',  c:'Wound',   dx:'Laceration, Minor', s:'Nurse Cruz'},
+    {d:'Apr 30, 14:22',p:'Pedro Lim',  c:'Hypertension',dx:'Stage 1 HPN',   s:'Dr. Reyes'},
+  ];
+  el.innerHTML = rows.map(r => `
+    <tr>
+      <td><span style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--text-muted)">${r.d}</span></td>
+      <td><strong>${r.p}</strong></td><td>${r.c}</td><td>${r.dx}</td><td>${r.s}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-ghost" onclick="toast('Viewing…','fa-eye','blue')"><i class="fas fa-eye"></i></button>
+        <button class="btn btn-sm btn-ghost" onclick="toast('Editing…','fa-pen','green')"><i class="fas fa-pen"></i></button>
+      </td>
+    </tr>`).join('');
+}
+
+/* ============================================================
+   ADMIN DASHBOARD
+============================================================ */
+function buildAdminDash(body) {
+  const tabs = document.getElementById('navTabs');
+  tabs.innerHTML = `
+    <button class="nav-module-tab active" onclick="switchDTab(this,'a-overview')"><i class="fas fa-gauge"></i> Overview</button>
+    <button class="nav-module-tab" onclick="switchDTab(this,'a-users')"><i class="fas fa-users"></i> Users</button>
+    <button class="nav-module-tab" onclick="switchDTab(this,'a-reports')"><i class="fas fa-chart-bar"></i> Reports</button>
+    <button class="nav-module-tab" onclick="switchDTab(this,'a-config')"><i class="fas fa-sliders"></i> Config</button>
+  `;
+  body.innerHTML = `
+  <!-- Overview -->
+  <div id="a-overview" class="sub-panel active">
+    <div class="welcome-banner reveal" style="background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(26,86,255,0.1))">
+      <div class="wb-greeting"><i class="fas fa-shield-halved" style="color:var(--gold);margin-right:12px"></i>Admin Dashboard</div>
+      <div class="wb-sub">Full system control — manage users, monitor performance, and configure clinic operations.</div>
+      <div class="wb-actions">
+        <button class="btn btn-primary-a btn-lg" onclick="switchDTabById('a-users');openModal('addUserModal')"><i class="fas fa-user-plus"></i> Add User</button>
+        <button class="btn btn-ghost" onclick="toast('Generating report…','fa-file-export','purple')"><i class="fas fa-file-export"></i> Export Report</button>
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card reveal" style="--stat-glow:rgba(124,58,237,0.1);animation-delay:.1s">
+        <div class="stat-icon" style="background:var(--grad-role-admin)"><i class="fas fa-users"></i></div>
+        <div class="stat-value">1,284</div><div class="stat-label">Registered Users</div>
+        <div class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> +48 this week</div>
+      </div>
+      <div class="stat-card reveal" style="--stat-glow:rgba(0,168,107,0.1);animation-delay:.2s">
+        <div class="stat-icon" style="background:var(--grad-role-nurse)"><i class="fas fa-calendar-check"></i></div>
+        <div class="stat-value">342</div><div class="stat-label">Consultations / Month</div>
+        <div class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> +12% vs last month</div>
+      </div>
+      <div class="stat-card reveal" style="--stat-glow:rgba(26,86,255,0.1);animation-delay:.3s">
+        <div class="stat-icon" style="background:var(--grad-blue)"><i class="fas fa-clock"></i></div>
+        <div class="stat-value">18<span style="font-size:1.2rem">m</span></div><div class="stat-label">Avg. Wait Time</div>
+        <div class="stat-trend trend-up"><i class="fas fa-arrow-down"></i> -3min improved</div>
+      </div>
+      <div class="stat-card reveal" style="--stat-glow:rgba(239,68,68,0.1);animation-delay:.4s">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#dc2626,#991b1b)"><i class="fas fa-triangle-exclamation"></i></div>
+        <div class="stat-value">4</div><div class="stat-label">System Alerts</div>
+        <div class="stat-trend trend-down"><i class="fas fa-circle-exclamation"></i> Review required</div>
+      </div>
+    </div>
+    <div class="grid-2 reveal">
+      <div class="glass-card">
+        <div class="card-head"><div class="card-title"><div class="card-icon" style="background:var(--grad-role-admin)"><i class="fas fa-chart-bar"></i></div>Peak Hours — Today</div></div>
+        <div class="card-body"><div class="bar-chart" id="adminBarChart"></div><div style="display:flex;justify-content:space-around;margin-top:8px"><span style="font-size:0.62rem;color:var(--text-muted)">7AM</span><span style="font-size:0.62rem;color:var(--text-muted)">9AM</span><span style="font-size:0.62rem;color:var(--text-muted)">11AM</span><span style="font-size:0.62rem;color:var(--text-muted)">1PM</span><span style="font-size:0.62rem;color:var(--text-muted)">3PM</span><span style="font-size:0.62rem;color:var(--text-muted)">5PM</span></div></div>
+      </div>
+      <div class="glass-card">
+        <div class="card-head"><div class="card-title"><div class="card-icon" style="background:var(--grad-role-admin)"><i class="fas fa-chart-pie"></i></div>Common Ailments</div></div>
+        <div class="card-body">
+          <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
+            <div class="donut-wrap" style="background:conic-gradient(var(--psu-green) 0% 40%,var(--teal) 40% 65%,var(--gold) 65% 80%,#f87171 80% 90%,var(--med-blue-light) 90% 100%)">
+              <div class="donut-hole"><div class="donut-val">342</div><div class="donut-lbl">Total<br>Cases</div></div>
+            </div>
+            <div class="legend">
+              <div class="leg-item"><div class="leg-dot" style="background:var(--psu-green)"></div>Fever / Flu — 40%</div>
+              <div class="leg-item"><div class="leg-dot" style="background:var(--teal)"></div>Hypertension — 25%</div>
+              <div class="leg-item"><div class="leg-dot" style="background:var(--gold)"></div>Injury — 15%</div>
+              <div class="leg-item"><div class="leg-dot" style="background:#f87171"></div>Dental — 10%</div>
+              <div class="leg-item"><div class="leg-dot" style="background:var(--med-blue-light)"></div>Mental Health — 10%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users -->
+  <div id="a-users" class="sub-panel">
+    <div class="page-head reveal"><div class="page-eyebrow">Administrator Panel</div><div class="page-title">User Accounts</div></div>
+    <div class="glass-card reveal">
+      <div class="card-head">
+        <div class="card-title"><div class="card-icon" style="background:var(--grad-role-admin)"><i class="fas fa-users-gear"></i></div>All Users</div>
+        <button class="btn btn-primary-a btn-sm" onclick="openModal('addUserModal')"><i class="fas fa-plus"></i> Add User</button>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+          <input class="field-input" style="max-width:260px" type="text" placeholder="Search users…">
+          <select class="field-select" style="max-width:160px"><option>All Roles</option><option>Student</option><option>Nurse</option><option>Doctor</option><option>Admin</option></select>
+        </div>
+        <div class="queue-list" id="adminUserList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reports -->
+  <div id="a-reports" class="sub-panel">
+    <div class="page-head reveal"><div class="page-eyebrow">Administrator Panel</div><div class="page-title">Statistical Reports</div></div>
+    <div class="glass-card reveal">
+      <div class="card-head">
+        <div class="card-title"><div class="card-icon" style="background:var(--grad-role-admin)"><i class="fas fa-table-list"></i></div>Monthly Consultation Report</div>
+        <button class="btn btn-sm btn-ghost" onclick="toast('Downloading CSV…','fa-download','teal')"><i class="fas fa-download"></i> Export</button>
+      </div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Month</th><th>Total Patients</th><th>Avg Wait (min)</th><th>Top Ailment</th><th>Peak Hour</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>April 2025</td><td>312</td><td>21</td><td>Fever / Flu</td><td>9–11 AM</td><td><span class="badge badge-teal">Closed</span></td></tr>
+              <tr><td>March 2025</td><td>289</td><td>24</td><td>Hypertension</td><td>8–10 AM</td><td><span class="badge badge-teal">Closed</span></td></tr>
+              <tr><td>February 2025</td><td>254</td><td>19</td><td>Fever / Flu</td><td>10 AM–12 PM</td><td><span class="badge badge-teal">Closed</span></td></tr>
+              <tr><td>January 2025</td><td>301</td><td>22</td><td>Injury</td><td>9–11 AM</td><td><span class="badge badge-teal">Closed</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config -->
+  <div id="a-config" class="sub-panel">
+    <div class="page-head reveal"><div class="page-eyebrow">Administrator Panel</div><div class="page-title">System Configuration</div></div>
+    <div class="grid-2">
+      <div class="glass-card reveal">
+        <div class="card-head">
+          <div class="card-title"><div class="card-icon" style="background:var(--grad-role-admin)"><i class="fas fa-sliders"></i></div>Queue Settings</div>
+          <button class="btn btn-sm btn-primary-a" onclick="toast('Settings saved!','fa-check','green')"><i class="fas fa-floppy-disk"></i> Save</button>
+        </div>
+        <div class="card-body">
+          <div class="form-group"><label class="field-label">Max Queue Capacity</label><input class="field-input" type="number" value="80"></div>
+          <div class="form-group"><label class="field-label">Avg Consultation Time (minutes)</label><input class="field-input" type="number" value="15"></div>
+          <div class="form-group"><label class="field-label">Queue Reset Time</label><input class="field-input" type="time" value="07:30"></div>
+          <div class="form-group"><label class="field-label">Operating Hours</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><input class="field-input" type="time" value="07:30"><input class="field-input" type="time" value="17:00"></div></div>
+        </div>
+      </div>
+      <div class="glass-card reveal">
+        <div class="card-head"><div class="card-title"><div class="card-icon" style="background:var(--grad-role-admin)"><i class="fas fa-bell"></i></div>Notifications</div></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="field-label">Notify Patient When</label>
+            <select class="field-select"><option>5 patients ahead</option><option>3 patients ahead</option><option>10 minutes before</option></select>
+          </div>
+          <div class="form-group">
+            <label class="field-label">Channels</label>
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+              <label style="display:flex;align-items:center;gap:10px;font-size:0.88rem;color:var(--text-soft);cursor:pointer"><input type="checkbox" checked> In-App Notifications</label>
+              <label style="display:flex;align-items:center;gap:10px;font-size:0.88rem;color:var(--text-soft);cursor:pointer"><input type="checkbox" checked> SMS Alerts</label>
+              <label style="display:flex;align-items:center;gap:10px;font-size:0.88rem;color:var(--text-soft);cursor:pointer"><input type="checkbox"> Email Notifications</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="field-label">Broadcast Announcement</label>
+            <textarea class="field-textarea" placeholder="Send a message to all users…"></textarea>
+            <button class="btn btn-sm btn-primary-a" style="margin-top:8px" onclick="toast('Announcement broadcast!','fa-bullhorn','purple')"><i class="fas fa-bullhorn"></i> Broadcast</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  `;
+  renderAdminUsers();
+  renderAdminChart();
+}
+
+function renderAdminUsers() {
+  const el = document.getElementById('adminUserList');
+  if (!el) return;
+  const users = [
+    {name:'Ana Bautista',  role:'Nurse',    id:'STAFF-001', g:'var(--grad-role-nurse)',   init:'AB', s:'active'},
+    {name:'Pedro Reyes',   role:'Doctor',   id:'STAFF-002', g:'var(--grad-blue)',          init:'PR', s:'active'},
+    {name:'Maria Santos',  role:'Student',  id:'PSU-2024-0001',g:'var(--grad-role-student)',init:'MS', s:'active'},
+    {name:'Jose Cruz',     role:'Student',  id:'PSU-2024-0089',g:'linear-gradient(135deg,#dc2626,#991b1b)',init:'JC', s:'inactive'},
+    {name:'Admin System',  role:'Admin',    id:'ADMIN-001', g:'var(--grad-role-admin)',    init:'AS', s:'active'},
+  ];
+  el.innerHTML = users.map(u => `
+    <div class="user-row">
+      <div class="user-avatar" style="background:${u.g}">${u.init}</div>
+      <div class="user-info">
+        <div class="user-name">${u.name}</div>
+        <div class="user-sub">${u.role} · ${u.id}</div>
+        <div style="margin-top:5px">${u.s==='active'?'<span class="badge badge-green"><span class="pulse-dot"></span> Active</span>':'<span class="badge badge-red">Inactive</span>'}</div>
+      </div>
+      <div class="user-actions">
+        <button class="btn btn-sm btn-ghost" onclick="toast('Editing user: ${u.name}','fa-pen','blue')"><i class="fas fa-pen"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="toast('Status toggled.','fa-user-slash','red')"><i class="fas fa-user-slash"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function renderAdminChart() {
+  const el = document.getElementById('adminBarChart');
+  if (!el) return;
+  const data = [5,18,38,28,42,35,30,22,18,24,14,6];
+  const max = Math.max(...data);
+  el.innerHTML = data.map((v,i) => `
+    <div class="bar-wrap">
+      <div class="bar-col" style="height:${(v/max)*100}%;background:${v===max?'var(--grad-gold)':'var(--grad-blue)'}">
+        <div class="bar-tip">${v} pts</div>
+      </div>
+    </div>`).join('');
+}
+
+/* ============================================================
+   TAB SWITCHER
+============================================================ */
+function switchDTab(btn, panelId) {
+  btn.closest('.nav-module-tabs').querySelectorAll('.nav-module-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
+  const p = document.getElementById(panelId);
+  if (p) { p.classList.add('active'); setTimeout(triggerReveal, 60); }
+}
+function switchDTabById(panelId) {
+  const p = document.getElementById(panelId);
+  if (!p) return;
+  document.querySelectorAll('.sub-panel').forEach(x => x.classList.remove('active'));
+  p.classList.add('active');
+  document.querySelectorAll('.nav-module-tab').forEach(t => {
+    t.classList.remove('active');
+    if (t.getAttribute('onclick')&&t.getAttribute('onclick').includes(panelId)) t.classList.add('active');
+  });
+  setTimeout(triggerReveal, 60);
+}
+
+/* ============================================================
+   MODALS
+============================================================ */
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-backdrop').forEach(bd => {
+  bd.addEventListener('click', e => { if (e.target === bd) bd.classList.remove('open'); });
+});
+
+/* ============================================================
+   TOAST
+============================================================ */
+const typeMap = {
+  green:  {bar:'var(--psu-green-glow)',   icon:'color:#4ade80'},
+  blue:   {bar:'var(--med-blue-light)',   icon:'color:var(--med-blue-light)'},
+  gold:   {bar:'var(--gold)',             icon:'color:var(--gold)'},
+  red:    {bar:'#f87171',                 icon:'color:#f87171'},
+  teal:   {bar:'var(--teal)',             icon:'color:var(--teal)'},
+  purple: {bar:'#a78bfa',                 icon:'color:#a78bfa'},
+};
+function toast(msg, iconCls='fa-circle-check', type='green') {
+  const z = document.getElementById('toastZone');
+  const t = document.createElement('div');
+  const cfg = typeMap[type] || typeMap.green;
+  t.className = 'toast-item';
+  t.innerHTML = `
+    <div class="toast-left-bar" style="background:${cfg.bar}"></div>
+    <div class="toast-icon" style="${cfg.icon}"><i class="fas ${iconCls}"></i></div>
+    <div style="flex:1">${msg}</div>
+  `;
+  z.appendChild(t);
+  t.addEventListener('click', () => removeToast(t));
+  setTimeout(() => removeToast(t), 4200);
+}
+function removeToast(t) {
+  t.classList.add('out');
+  setTimeout(() => t.remove(), 400);
+}
+
+/* ============================================================
+   CLOCK
+============================================================ */
+function startClock() {
+  function tick() {
+    const el = document.getElementById('liveClock');
+    if (!el) return;
+    const n = new Date();
+    el.textContent = [n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+  }
+  tick(); setInterval(tick, 1000);
+}
+
+/* ============================================================
+   REVEAL ON SCROLL
+============================================================ */
+function triggerReveal() {
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('in'), i * 70);
+        obs.unobserve(e.target);
+      }
+    });
+  }, {threshold: 0.08});
+  document.querySelectorAll('.reveal:not(.in)').forEach(el => obs.observe(el));
+}
+
+/* Scroll top btn */
+window.addEventListener('scroll', () => {
+  const b = document.getElementById('scrollTopBtn');
+  b.classList.toggle('show', window.scrollY > 300);
+});
+
+/* Ripple effect */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.btn, .role-enter-btn, .modal-submit-btn');
+  if (!btn) return;
+  const r = document.createElement('span');
+  r.className = 'ripple-fx';
+  const rect = btn.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  r.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px;position:absolute;`;
+  btn.style.position = btn.style.position || 'relative';
+  btn.appendChild(r);
+  setTimeout(() => r.remove(), 700);
+});
+</script>
+</body>
+</html>
