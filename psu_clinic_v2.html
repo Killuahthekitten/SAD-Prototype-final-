@@ -429,6 +429,132 @@ body {
 }
 .role-enter-btn:hover .btn-arrow { transform: translateX(4px); }
 
+/* ================================================================
+   ROLES SCREEN TOP NAV
+================================================================ */
+.roles-topnav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  background: rgba(10,22,40,0.92); backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+.roles-topnav-inner {
+  max-width: 1300px; margin: 0 auto;
+  padding: 0 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64px;
+}
+.roles-topnav-brand {
+  display: flex; align-items: center; gap: 14px;
+}
+.roles-topnav-logo {
+  width: 42px; height: 42px; border-radius: 10px;
+  background: rgba(255,215,0,0.08);
+  border: 1px solid rgba(255,215,0,0.2);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.roles-topnav-logo img {
+  width: 34px; height: 34px; object-fit: contain;
+}
+.roles-topnav-name { line-height: 1.2; }
+.roles-topnav-name .title {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.92rem; font-weight: 700; color: var(--text-white);
+  letter-spacing: 0.03em;
+}
+.roles-topnav-name .sub {
+  font-size: 0.68rem; color: var(--text-muted); letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.roles-topnav-tabs {
+  display: flex; align-items: center; gap: 6px;
+}
+.roles-topnav-tab {
+  padding: 8px 20px; border-radius: 99px; border: none;
+  background: rgba(255,255,255,0.05); color: var(--text-soft);
+  font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+  font-weight: 500; cursor: pointer; letter-spacing: 0.04em;
+  display: flex; align-items: center; gap: 7px;
+  transition: background 0.2s, color 0.2s;
+}
+.roles-topnav-tab:hover { background: rgba(255,255,255,0.1); color: var(--text-white); }
+.roles-topnav-tab.active {
+  background: rgba(26,86,255,0.15); color: var(--med-blue-light);
+  border: 1px solid rgba(26,86,255,0.25);
+}
+.roles-topnav-clock {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem; color: var(--gold); letter-spacing: 0.08em;
+  display: flex; align-items: center; gap: 6px;
+}
+.roles-topnav-clock .live-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--psu-green-glow);
+  box-shadow: 0 0 8px var(--psu-green-glow);
+  animation: livePulse 1.5s ease-in-out infinite;
+}
+@keyframes livePulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+/* ================================================================
+   HERO DESCRIPTION BLOCK (above role select)
+================================================================ */
+.roles-hero {
+  text-align: center;
+  padding: 0 24px 56px;
+  position: relative;
+}
+.roles-hero-badge {
+  display: inline-flex; align-items: center; gap: 9px;
+  background: rgba(26,86,255,0.12); border: 1px solid rgba(26,86,255,0.28);
+  padding: 9px 22px; border-radius: 99px;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--med-blue-light);
+  margin-bottom: 28px;
+  animation: slideUp 0.6s var(--ease-bounce) 0.05s both;
+  box-shadow: 0 0 24px rgba(26,86,255,0.18);
+}
+.roles-hero-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.4rem, 5vw, 3.8rem);
+  font-weight: 900; line-height: 1.1;
+  color: var(--text-white);
+  margin-bottom: 10px;
+  animation: slideUp 0.6s var(--ease-bounce) 0.15s both;
+  text-shadow: 0 0 60px rgba(255,255,255,0.12);
+}
+.roles-hero-heading span {
+  background: var(--grad-gold);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.roles-hero-subtext {
+  max-width: 580px; margin: 0 auto 40px;
+  font-size: 0.98rem; line-height: 1.8; color: var(--text-soft);
+  animation: slideUp 0.6s var(--ease-bounce) 0.25s both;
+}
+.roles-hero-stats {
+  display: flex; align-items: center; justify-content: center;
+  gap: 40px; flex-wrap: wrap;
+  animation: slideUp 0.6s var(--ease-bounce) 0.35s both;
+}
+.hero-stat {
+  text-align: center;
+}
+.hero-stat-value {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem; font-weight: 900;
+  color: var(--gold); line-height: 1;
+  text-shadow: 0 0 24px rgba(255,215,0,0.35);
+}
+.hero-stat-label {
+  font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-muted); margin-top: 5px; font-weight: 600;
+}
+.hero-stat-divider {
+  width: 1px; height: 40px; background: rgba(255,255,255,0.1);
+}
+@media(max-width:600px){ .hero-stat-divider{ display:none; } }
+
 /* Bottom nav on role screen */
 .roles-bottom {
   text-align: center; margin-top: 40px;
@@ -1180,7 +1306,80 @@ tbody td { padding: 13px 18px; font-size: 0.87rem; color: var(--text-bright); }
      SCREEN 2: ROLE SELECTION
 ================================================================ -->
 <div id="screen-roles" class="screen">
-  <div class="roles-container">
+
+  <!-- Top Navigation Bar -->
+  <nav class="roles-topnav" style="display:none;">
+    <div class="roles-topnav-inner">
+      <!-- Brand / Logo -->
+      <div class="roles-topnav-brand">
+        <div class="roles-topnav-logo">
+          <img src="logo.webp" alt="PSU Logo" onerror="this.style.display='none'">
+        </div>
+        <div class="roles-topnav-name">
+          <div class="title">Pangasinan State University</div>
+          <div class="sub">University Clinic · Queue System</div>
+        </div>
+      </div>
+      <!-- Role Tabs -->
+      <div class="roles-topnav-tabs">
+        <button class="roles-topnav-tab active" onclick="openLoginModal('student')">
+          <i class="fas fa-user-graduate"></i> Student
+        </button>
+        <button class="roles-topnav-tab" onclick="openLoginModal('nurse')">
+          <i class="fas fa-stethoscope"></i> Staff
+        </button>
+        <button class="roles-topnav-tab" onclick="openLoginModal('admin')">
+          <i class="fas fa-shield-halved"></i> Admin
+        </button>
+      </div>
+      <!-- Live Clock -->
+      <div class="roles-topnav-clock">
+        <span id="rolesNavClock">00:00:00</span>
+        <div class="live-dot"></div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="roles-container" style="padding-top: 120px;">
+
+    <!-- Hero Description -->
+    <div class="roles-hero">
+      <div class="roles-hero-badge">
+        <i class="fas fa-shield-heart"></i>
+        PSU University Clinic System
+      </div>
+      <div class="roles-hero-heading">
+        Digital Queueing &amp; <br>
+        <span>Schedule Management</span>
+      </div>
+      <div class="roles-hero-subtext">
+        A streamlined, real-time clinic management platform for Pangasinan State
+        University — serving students, staff, and administrators with excellence.
+      </div>
+      <div class="roles-hero-stats">
+        <div class="hero-stat">
+          <div class="hero-stat-value">9</div>
+          <div class="hero-stat-label">Campuses</div>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <div class="hero-stat-value">∞</div>
+          <div class="hero-stat-label">Real-Time</div>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <div class="hero-stat-value">3</div>
+          <div class="hero-stat-label">Modules</div>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <div class="hero-stat-value">24/7</div>
+          <div class="hero-stat-label">Available</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Role Selection -->
     <div class="roles-eyebrow">Access Portal</div>
     <div class="roles-title">Select Your Role</div>
     <div class="roles-underline"></div>
@@ -1299,7 +1498,7 @@ tbody td { padding: 13px 18px; font-size: 0.87rem; color: var(--text-bright); }
     <div class="dash-nav-inner">
       <div class="nav-brand" onclick="confirmLogout()">
         <div class="nav-brand-logo">
-          <img src="" alt="PSU" onerror="this.style.display='none';this.parentElement.innerHTML='<i class=\'fas fa-university\' style=\'color:rgba(255,215,0,0.6);font-size:1rem\'></i>'">
+          <img src="logo.webp" alt="PSU" onerror="this.style.display='none';this.parentElement.innerHTML='<i class=\'fas fa-university\' style=\'color:rgba(255,215,0,0.6);font-size:1rem\'></i>'">
         </div>
         <div class="nav-brand-text">
           <div class="title">PSU Clinic</div>
@@ -1493,6 +1692,9 @@ function _activateScreen(id) {
   });
   const s = document.getElementById(id);
   s.classList.add('active');
+  // Show/hide roles topnav
+  const rolesNav = document.querySelector('.roles-topnav');
+  if (rolesNav) rolesNav.style.display = (id === 'screen-roles') ? 'block' : 'none';
   if (id === 'screen-roles') triggerReveal();
   if (id === 'screen-dashboard') { setTimeout(triggerReveal, 100); }
 }
@@ -2335,10 +2537,12 @@ function removeToast(t) {
 ============================================================ */
 function startClock() {
   function tick() {
-    const el = document.getElementById('liveClock');
-    if (!el) return;
     const n = new Date();
-    el.textContent = [n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+    const timeStr = [n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+    const dash = document.getElementById('liveClock');
+    if (dash) dash.textContent = timeStr;
+    const roles = document.getElementById('rolesNavClock');
+    if (roles) roles.textContent = timeStr;
   }
   tick(); setInterval(tick, 1000);
 }
